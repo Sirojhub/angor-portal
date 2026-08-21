@@ -56,4 +56,44 @@ router.get('/me', require('../middleware/auth'), (req, res) => {
   res.json(safeUser);
 });
 
+// POST /api/auth/reset-password
+router.post('/reset-password', async (req, res) => {
+  const { email } = req.body;
+  if (!email) {
+    return res.status(400).json({ error: 'Email kiritilishi shart' });
+  }
+
+  const cleanEmail = email.trim().toLowerCase();
+  const user = db.prepare('SELECT * FROM users WHERE LOWER(email) = LOWER(?)').get(cleanEmail);
+
+  if (!user) {
+    return res.status(404).json({ error: 'Ushbu email bilan ro\'yxatdan o\'tgan xodim topilmadi' });
+  }
+
+  const tempPass = 'Angor2026!';
+  const hashed = bcrypt.hashSync(tempPass, 10);
+  db.prepare('UPDATE users SET password = ?, updated_at = datetime(\'now\') WHERE id = ?').run(hashed, user.id);
+
+  // Send Telegram Notification to Admin/Director
+  try {
+    const TelegramService = require('../services/telegram');
+    await TelegramService.sendMessage(
+      `🔑 <b>ANGOR AGRO STAR — PAROL TIKLANDI</b>\n` +
+      `--------------------------------------\n` +
+      `👤 <b>Xodim</b>: ${user.name}\n` +
+      `✉️ <b>Email</b>: ${user.email}\n` +
+      `💼 <b>Lavozim</b>: ${user.position || user.role}\n` +
+      `🔑 <b>Yangi Vaqtinchalik Parol</b>: <code>${tempPass}</code>\n` +
+      `--------------------------------------\n` +
+      `ℹ️ <i>Xodimga ushbu vaqtinchalik parolni taqdim etishingiz mumkin.</i>`
+    );
+  } catch (e) {}
+
+  res.json({
+    success: true,
+    message: 'Parol muvaffaqiyatli tiklandi va Telegramga yuborildi',
+    tempPassword: tempPass
+  });
+});
+
 module.exports = router;
