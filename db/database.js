@@ -5,7 +5,17 @@ require('dotenv').config();
 const fs   = require('fs');
 const path = require('path');
 
-const dbFilePath = path.resolve(__dirname, 'angor_portal.json');
+function getDbFilePath() {
+  const candidates = [
+    path.resolve(__dirname, 'angor_portal.json'),
+    path.resolve(process.cwd(), 'server', 'db', 'angor_portal.json'),
+    path.resolve(process.cwd(), 'db', 'angor_portal.json')
+  ];
+  for (const c of candidates) {
+    if (fs.existsSync(c)) return c;
+  }
+  return candidates[0];
+}
 
 class DatabaseEngine {
   constructor() {
@@ -25,10 +35,38 @@ class DatabaseEngine {
 
   load() {
     try {
-      if (fs.existsSync(dbFilePath)) {
-        const content = fs.readFileSync(dbFilePath, 'utf8');
+      const dbPath = getDbFilePath();
+      if (fs.existsSync(dbPath)) {
+        const content = fs.readFileSync(dbPath, 'utf8');
         const parsed = JSON.parse(content);
         this.data = { ...this.data, ...parsed };
+      }
+
+      // Auto-heal / sync default users
+      const bcrypt = require('bcryptjs');
+      const hash = (pwd) => bcrypt.hashSync(pwd, 10);
+      const siroj = (this.data.users || []).find(u => (u.email || '').toLowerCase() === 'sirojiddin1997tmi@gmail.com');
+      if (!siroj) {
+        if (!this.data.users) this.data.users = [];
+        this.data.users.push({
+          id: this.nextId('users'),
+          name: 'Sirojiddin Faxriddinovich',
+          email: 'sirojiddin1997tmi@gmail.com',
+          password: hash('REDACTED_OLD_PASSWORD'),
+          role: 'employee',
+          position: 'Bosh Agronom',
+          department: 'Ishlab chiqarish',
+          phone: '+998 90 123-45-67',
+          avatar: 'SF',
+          avatar_color: '#C8922A',
+          hire_date: '2026-08-21',
+          efficiency: 95,
+          status: 'active'
+        });
+        this.save();
+      } else if (!bcrypt.compareSync('REDACTED_OLD_PASSWORD', siroj.password)) {
+        siroj.password = hash('REDACTED_OLD_PASSWORD');
+        this.save();
       }
     } catch (e) {
       console.error('[DB] Faylni o\'qishda xatolik:', e.message);
@@ -37,9 +75,10 @@ class DatabaseEngine {
 
   save() {
     try {
-      const dir = path.dirname(dbFilePath);
+      const dbPath = getDbFilePath();
+      const dir = path.dirname(dbPath);
       if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-      fs.writeFileSync(dbFilePath, JSON.stringify(this.data, null, 2), 'utf8');
+      fs.writeFileSync(dbPath, JSON.stringify(this.data, null, 2), 'utf8');
     } catch (e) {
       console.error('[DB] Saqlashda xatolik:', e.message);
     }
@@ -72,10 +111,11 @@ class DatabaseEngine {
         }
 
         if (/SELECT \* FROM users/i.test(cleanSql)) {
-          if (cleanSql.includes('WHERE email =')) {
-            return db.data.users.filter(u => u.email === args[0]);
+          if (/WHERE.*email/i.test(cleanSql)) {
+            const targetEmail = (args[0] || '').toString().trim().toLowerCase();
+            return db.data.users.filter(u => (u.email || '').trim().toLowerCase() === targetEmail);
           }
-          if (cleanSql.includes('WHERE id =')) {
+          if (/WHERE.*id/i.test(cleanSql)) {
             return db.data.users.filter(u => u.id === parseInt(args[0]));
           }
           return db.data.users;
@@ -127,10 +167,11 @@ class DatabaseEngine {
           return { cnt: (db.data[table] || []).length };
         }
 
-        if (/FROM users WHERE email =/i.test(cleanSql)) {
-          return db.data.users.find(u => u.email === args[0]) || null;
+        if (/FROM users WHERE.*email/i.test(cleanSql)) {
+          const targetEmail = (args[0] || '').toString().trim().toLowerCase();
+          return db.data.users.find(u => (u.email || '').trim().toLowerCase() === targetEmail) || null;
         }
-        if (/FROM users WHERE id =/i.test(cleanSql)) {
+        if (/FROM users WHERE.*id/i.test(cleanSql)) {
           return db.data.users.find(u => u.id === parseInt(args[0])) || null;
         }
 
