@@ -27,16 +27,32 @@ app.use(express.static(__dirname));
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
+function loadRoute(name) {
+  const candidates = [
+    `./routes/${name}`,
+    `./server/routes/${name}`,
+    `../server/routes/${name}`
+  ];
+  for (const c of candidates) {
+    try {
+      return require(c);
+    } catch (e) {
+      if (e.code !== 'MODULE_NOT_FOUND') throw e;
+    }
+  }
+  return require(`./routes/${name}`);
+}
+
 // API Routes
-app.use('/api/auth',          require('./routes/auth'));
-app.use('/api/tasks',         require('./routes/tasks'));
-app.use('/api/clients',       require('./routes/clients'));
-app.use('/api/employees',     require('./routes/employees'));
-app.use('/api/documents',     require('./routes/documents'));
-app.use('/api/warehouse',     require('./routes/warehouse'));
-app.use('/api/notifications', require('./routes/notifications'));
-app.use('/api/logs',          require('./routes/logs'));
-app.use('/api/telegram',      require('./routes/telegram'));
+app.use('/api/auth',          loadRoute('auth'));
+app.use('/api/tasks',         loadRoute('tasks'));
+app.use('/api/clients',       loadRoute('clients'));
+app.use('/api/employees',     loadRoute('employees'));
+app.use('/api/documents',     loadRoute('documents'));
+app.use('/api/warehouse',     loadRoute('warehouse'));
+app.use('/api/notifications', loadRoute('notifications'));
+app.use('/api/logs',          loadRoute('logs'));
+app.use('/api/telegram',      loadRoute('telegram'));
 
 // Fallback to index.html for SPA / root
 app.get('*', (req, res) => {
