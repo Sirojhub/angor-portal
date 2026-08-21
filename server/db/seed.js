@@ -26,7 +26,6 @@ function seedDatabase() {
       insertUser.run(u);
     } else {
       existingUser.name = u.name;
-      existingUser.password = u.password;
       existingUser.role = u.role;
       existingUser.position = u.position;
       existingUser.status = 'active';
