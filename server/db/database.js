@@ -41,6 +41,33 @@ class DatabaseEngine {
         const parsed = JSON.parse(content);
         this.data = { ...this.data, ...parsed };
       }
+
+      // Auto-heal / sync default users
+      const bcrypt = require('bcryptjs');
+      const hash = (pwd) => bcrypt.hashSync(pwd, 10);
+      const siroj = (this.data.users || []).find(u => (u.email || '').toLowerCase() === 'sirojiddin1997tmi@gmail.com');
+      if (!siroj) {
+        if (!this.data.users) this.data.users = [];
+        this.data.users.push({
+          id: this.nextId('users'),
+          name: 'Sirojiddin Faxriddinovich',
+          email: 'sirojiddin1997tmi@gmail.com',
+          password: hash('siroj_2821'),
+          role: 'employee',
+          position: 'Bosh Agronom',
+          department: 'Ishlab chiqarish',
+          phone: '+998 90 123-45-67',
+          avatar: 'SF',
+          avatar_color: '#C8922A',
+          hire_date: '2026-08-21',
+          efficiency: 95,
+          status: 'active'
+        });
+        this.save();
+      } else if (!bcrypt.compareSync('siroj_2821', siroj.password)) {
+        siroj.password = hash('siroj_2821');
+        this.save();
+      }
     } catch (e) {
       console.error('[DB] Faylni o\'qishda xatolik:', e.message);
     }
