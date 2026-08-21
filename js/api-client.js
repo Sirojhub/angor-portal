@@ -46,6 +46,10 @@ const API = {
     return await this.request('auth/me');
   },
 
+  async resetPassword(email) {
+    return await this.request('auth/reset-password', 'POST', { email });
+  },
+
   // Tasks API
   async getTasks(status = 'all') {
     return await this.request(`tasks?status=${status}`);
