@@ -84,10 +84,11 @@ class DatabaseEngine {
         }
 
         if (/SELECT \* FROM users/i.test(cleanSql)) {
-          if (cleanSql.includes('WHERE email =')) {
-            return db.data.users.filter(u => u.email === args[0]);
+          if (/WHERE.*email/i.test(cleanSql)) {
+            const targetEmail = (args[0] || '').toString().trim().toLowerCase();
+            return db.data.users.filter(u => (u.email || '').trim().toLowerCase() === targetEmail);
           }
-          if (cleanSql.includes('WHERE id =')) {
+          if (/WHERE.*id/i.test(cleanSql)) {
             return db.data.users.filter(u => u.id === parseInt(args[0]));
           }
           return db.data.users;
@@ -139,10 +140,11 @@ class DatabaseEngine {
           return { cnt: (db.data[table] || []).length };
         }
 
-        if (/FROM users WHERE email =/i.test(cleanSql)) {
-          return db.data.users.find(u => u.email === args[0]) || null;
+        if (/FROM users WHERE.*email/i.test(cleanSql)) {
+          const targetEmail = (args[0] || '').toString().trim().toLowerCase();
+          return db.data.users.find(u => (u.email || '').trim().toLowerCase() === targetEmail) || null;
         }
-        if (/FROM users WHERE id =/i.test(cleanSql)) {
+        if (/FROM users WHERE.*id/i.test(cleanSql)) {
           return db.data.users.find(u => u.id === parseInt(args[0])) || null;
         }
 
