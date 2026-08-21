@@ -342,9 +342,12 @@ class DatabaseEngine {
 
         // UPDATE users
         if (/UPDATE users SET/i.test(cleanSql)) {
-          const id = parseInt(args[args.length - 1]);
-          const user = db.data.users.find(u => u.id === id);
+          const target = args[args.length - 1];
+          const user = db.data.users.find(u => u.id === parseInt(target) || (typeof target === 'string' && (u.email || '').toLowerCase() === target.toLowerCase()));
           if (user) {
+            if (cleanSql.includes('password =')) {
+              user.password = args[0];
+            }
             user.updated_at = new Date().toISOString();
             db.save();
           }
