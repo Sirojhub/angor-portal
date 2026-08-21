@@ -17,9 +17,7 @@ try { db = require('../db/database'); } catch (e1) {
 router.post('/login', (req, res) => {
   const { email, password } = req.body;
 
-  if (!email || !password) {
-    return res.status(400).json({ error: 'Email va parol kiritilishi shart' });
-  }
+  const cleanEmail = (email || '').trim().toLowerCase();
 
   const knownPasswords = {
     'aziz@angor.uz': 'REDACTED_OLD_PASSWORD',
