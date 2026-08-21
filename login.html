@@ -359,7 +359,7 @@
       inp.type = inp.type==='password' ? 'text' : 'password';
     }
 
-    function handleLogin(e){
+    async function handleLogin(e){
       e.preventDefault();
       const email = document.getElementById('loginEmail').value.trim();
       const pass  = document.getElementById('loginPassword').value;
@@ -380,24 +380,39 @@
       btnText.style.display='none';
       spinner.style.display='block';
 
-      setTimeout(()=>{
-        const user = USERS.find(u=>u.email===email && u.password===pass);
-        if(user){
-          // Save session
-          const remember = document.getElementById('rememberMe').checked;
-          const storage = remember ? localStorage : sessionStorage;
+      const remember = document.getElementById('rememberMe').checked;
+      const storage = remember ? localStorage : sessionStorage;
+
+      let loggedIn = false;
+      if (window.API && API.login) {
+        try {
+          const res = await API.login(email, pass);
+          if (res && res.success && res.user) {
+            storage.setItem('ags_user', JSON.stringify(res.user));
+            if (res.token) storage.setItem('ags_token', res.token);
+            loggedIn = true;
+          }
+        } catch (err) {}
+      }
+
+      if (!loggedIn) {
+        const user = USERS.find(u => (u.email||'').toLowerCase() === email.toLowerCase() && u.password === pass);
+        if (user) {
           storage.setItem('ags_user', JSON.stringify(user));
-          storage.setItem('ags_token', 'token_'+Date.now());
-          // Redirect
-          window.location.href = 'index.html';
-        } else {
-          btn.disabled=false;
-          btnText.style.display='block';
-          spinner.style.display='none';
-          document.getElementById('errorText').textContent='Login yoki parol noto\'g\'ri!';
-          errEl.classList.add('show');
+          storage.setItem('ags_token', 'token_' + Date.now());
+          loggedIn = true;
         }
-      }, 800);
+      }
+
+      if (loggedIn) {
+        window.location.href = 'index.html';
+      } else {
+        btn.disabled=false;
+        btnText.style.display='block';
+        spinner.style.display='none';
+        document.getElementById('errorText').textContent='Login yoki parol noto\'g\'ri!';
+        errEl.classList.add('show');
+      }
     }
 
     // Init
