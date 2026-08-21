@@ -4,6 +4,10 @@
 const db = require('./database');
 const bcrypt = require('bcryptjs');
 
+function hash(pwd) {
+  return bcrypt.hashSync(pwd, 10);
+}
+
 function seedDatabase() {
   const insertUser = db.prepare(`
     INSERT INTO users (name, email, password, role, position, department, phone, avatar, avatar_color, hire_date, efficiency, status)
