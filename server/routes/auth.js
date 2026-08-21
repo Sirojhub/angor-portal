@@ -74,25 +74,6 @@ router.post('/login', (req, res) => {
 
   const { password: _, ...safeUser } = user;
   return res.json({ success: true, token, user: safeUser });
-
-  if (user.status !== 'active') {
-    return res.status(403).json({ error: 'Foydalanuvchi bloklangan' });
-  }
-
-  const token = jwt.sign(
-    { id: user.id, email: user.email, role: user.role, name: user.name },
-    process.env.JWT_SECRET || 'REDACTED_OLD_JWT_SECRET',
-    { expiresIn: process.env.JWT_EXPIRES || '8h' }
-  );
-
-  // Parolni javobdan olib tashlash
-  const { password: _, ...safeUser } = user;
-
-  res.json({
-    success: true,
-    token,
-    user: safeUser
-  });
 });
 
 // GET /api/auth/me
