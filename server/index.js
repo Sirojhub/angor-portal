@@ -64,3 +64,13 @@ app.listen(PORT, () => {
   console.log(` 🚀 Server manzili: http://localhost:${PORT}`);
   console.log(`================================================`);
 });
+
+// Self-ping to prevent Render Free Tier Cold-Start delays (Keeps server awake 24/7)
+if (process.env.NODE_ENV === 'production' || process.env.RENDER) {
+  setInterval(() => {
+    try {
+      const https = require('https');
+      https.get('https://angor-portal.onrender.com/api/logs', (res) => {}).on('error', () => {});
+    } catch (e) {}
+  }, 9 * 60 * 1000); // Every 9 minutes
+}
