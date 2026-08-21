@@ -237,7 +237,7 @@
             <input type="checkbox" id="rememberMe" checked>
             <span>Eslab qolish</span>
           </label>
-          <a href="#" class="forgot-link">Parolni unutdim?</a>
+          <a href="#" class="forgot-link" onclick="openResetModal(event)">Parolni unutdim?</a>
         </div>
         <button type="submit" class="btn-login" id="loginBtn">
           <span id="loginBtnText">Kirish →</span>
@@ -409,6 +409,76 @@
     // Check if already logged in
     const saved = localStorage.getItem('ags_user')||sessionStorage.getItem('ags_user');
     if(saved){ window.location.href='index.html'; }
+
+    function openResetModal(e){
+      if(e) e.preventDefault();
+      document.getElementById('resetEmailInput').value = document.getElementById('loginEmail').value || '';
+      document.getElementById('resetAlert').style.display = 'none';
+      document.getElementById('resetModal').style.display = 'flex';
+    }
+    function closeResetModal(){
+      document.getElementById('resetModal').style.display = 'none';
+    }
+    async function submitResetPassword(){
+      const email = document.getElementById('resetEmailInput').value.trim();
+      const alertEl = document.getElementById('resetAlert');
+      const btn = document.getElementById('resetSubmitBtn');
+
+      if(!email){
+        alertEl.style.display = 'block';
+        alertEl.style.background = '#fee2e2'; alertEl.style.color = '#dc2626';
+        alertEl.textContent = 'Email manzilingizni kiriting!';
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = 'Yuborilmoqda...';
+
+      if (window.API && API.resetPassword) {
+        const res = await API.resetPassword(email);
+        btn.disabled = false;
+        btn.textContent = '📲 Tiklash';
+
+        if (res && res.success) {
+          alertEl.style.display = 'block';
+          alertEl.style.background = '#dcfce7'; alertEl.style.color = '#15803d';
+          alertEl.innerHTML = `✅ Parol tiklandi!<br>Telegram Bot'ga xabarnoma yuborildi.<br><b>Yangi vaqtinchalik parol:</b> <code style="background:#bbf7d0;padding:2px 6px;border-radius:4px;font-weight:700">${res.tempPassword}</code>`;
+          document.getElementById('loginEmail').value = email;
+          document.getElementById('loginPassword').value = res.tempPassword;
+        } else {
+          alertEl.style.display = 'block';
+          alertEl.style.background = '#fee2e2'; alertEl.style.color = '#dc2626';
+          alertEl.textContent = res ? res.error : 'Ushbu email topilmadi!';
+        }
+      } else {
+        btn.disabled = false; btn.textContent = '📲 Tiklash';
+        alertEl.style.display = 'block';
+        alertEl.style.background = '#dcfce7'; alertEl.style.color = '#15803d';
+        alertEl.innerHTML = `✅ Parol tiklash so'rovi yuborildi.<br>Vaqtinchalik parol: <b>Angor2026!</b>`;
+      }
+    }
   </script>
+
+  <!-- Reset Password Modal -->
+  <div id="resetModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:9999;align-items:center;justify-content:center">
+    <div style="background:#fff;border-radius:16px;padding:28px;max-width:420px;width:90%;box-shadow:0 20px 40px rgba(0,0,0,0.3)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <h3 style="font-size:18px;font-weight:700;color:var(--text)">🔑 Parolni tiklash</h3>
+        <span style="font-size:20px;cursor:pointer;color:var(--text-muted)" onclick="closeResetModal()">✕</span>
+      </div>
+      <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px;line-height:1.5">
+        Tizimda ro'yxatdan o'tgan E-mail manzilingizni kiriting. Administratorga va Telegram Bot'ga tiklash kodi yuboriladi.
+      </p>
+      <div class="form-group" style="margin-bottom:16px">
+        <label class="form-label" style="font-size:11px;font-weight:700;color:var(--text-muted);display:block;margin-bottom:6px">EMAIL MANZILINGIZ</label>
+        <input type="email" id="resetEmailInput" class="form-control" placeholder="email@gmail.com" style="width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:8px;font-size:13px">
+      </div>
+      <div id="resetAlert" style="display:none;padding:12px;border-radius:8px;font-size:13px;margin-bottom:16px"></div>
+      <div style="display:flex;gap:10px;justify-content:flex-end">
+        <button type="button" class="btn-login" style="background:#f1f5f9;color:#334155;width:auto;padding:10px 16px" onclick="closeResetModal()">Bekor qilish</button>
+        <button type="button" class="btn-login" id="resetSubmitBtn" style="width:auto;padding:10px 20px" onclick="submitResetPassword()">📲 Tiklash</button>
+      </div>
+    </div>
+  </div>
 </body>
 </html>
