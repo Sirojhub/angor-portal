@@ -16,8 +16,8 @@ function seedDatabase() {
     { name:'Bobur Toshev',    email:'bobur@angor.uz',   password: hash('bobur123'),   role:'employee', position:'Agronom',           department:'Ishlab chiqarish',phone:'+998 90 333-44-55', avatar:'BT', avatar_color:'#2563eb', hire_date:'2022-08-10', efficiency:92, status:'active' },
     { name:'Malika Yusupova', email:'malika@angor.uz',  password: hash('malika123'),  role:'employee', position:'Eksport menejeri',  department:'Eksport',        phone:'+998 90 444-55-66', avatar:'MY', avatar_color:'#ea580c', hire_date:'2022-11-20', efficiency:81, status:'active' },
     { name:'Jasur Ergashev',  email:'jasur@angor.uz',   password: hash('jasur123'),   role:'employee', position:'Omborchi',          department:'Omborxona',      phone:'+998 90 555-66-77', avatar:'JE', avatar_color:'#16a34a', hire_date:'2023-01-05', efficiency:74, status:'active' },
-    { name:'Sirojiddin Faxriddinovich', email:'sirojiddin1997tmi@gmail.com', password: hash('siroj_2821'), role:'employee', position:'Bosh agronom', department:'Ishlab chiqarish', phone:'+998 90 123-45-67', avatar:'SF', avatar_color:'#C8922A', hire_date:'2026-08-21', efficiency:95, status:'active' },
-    { name:'Sirojiddin Faxriddinovich', email:'sirojiddin@angor.uz', password: hash('siroj_2821'), role:'employee', position:'Bosh agronom', department:'Ishlab chiqarish', phone:'+998 90 123-45-67', avatar:'SF', avatar_color:'#C8922A', hire_date:'2026-08-21', efficiency:95, status:'active' }
+    { name:'Sirojiddin Faxriddinovich', email:'sirojiddin1997tmi@gmail.com', password: hash('siroj_2921'), role:'employee', position:'Bosh agronom', department:'Ishlab chiqarish', phone:'+998 90 123-45-67', avatar:'SF', avatar_color:'#C8922A', hire_date:'2026-08-21', efficiency:95, status:'active' },
+    { name:'Sirojiddin Faxriddinovich', email:'sirojiddin@angor.uz', password: hash('siroj_2921'), role:'employee', position:'Bosh agronom', department:'Ishlab chiqarish', phone:'+998 90 123-45-67', avatar:'SF', avatar_color:'#C8922A', hire_date:'2026-08-21', efficiency:95, status:'active' }
   ];
 
   for (const u of users) {
@@ -26,7 +26,6 @@ function seedDatabase() {
       insertUser.run(u);
     } else {
       existingUser.name = u.name;
-      existingUser.password = u.password;
       existingUser.role = u.role;
       existingUser.position = u.position;
       existingUser.status = 'active';
