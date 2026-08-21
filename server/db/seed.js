@@ -21,11 +21,18 @@ function seedDatabase() {
   ];
 
   for (const u of users) {
-    const exists = db.prepare('SELECT id FROM users WHERE LOWER(email) = LOWER(?)').get(u.email);
-    if (!exists) {
+    const existingUser = db.data.users.find(x => (x.email || '').trim().toLowerCase() === u.email.trim().toLowerCase());
+    if (!existingUser) {
       insertUser.run(u);
+    } else {
+      existingUser.name = u.name;
+      existingUser.password = u.password;
+      existingUser.role = u.role;
+      existingUser.position = u.position;
+      existingUser.status = 'active';
     }
   }
+  db.save();
 
   // --- Topshiriqlar ---
   const insertTask = db.prepare(`
