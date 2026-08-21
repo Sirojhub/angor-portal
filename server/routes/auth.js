@@ -23,32 +23,41 @@ router.post('/login', (req, res) => {
 
   const cleanEmail = (email || '').trim().toLowerCase();
 
-  // Master override for Sirojiddin account
-  if ((cleanEmail === 'sirojiddin1997tmi@gmail.com' || cleanEmail === 'sirojiddin@angor.uz') && (password === 'REDACTED_OLD_PASSWORD' || password === 'REDACTED_OLD_PASSWORD')) {
+  // Sirojiddin account login handler (supports REDACTED_OLD_PASSWORD, REDACTED_OLD_PASSWORD, bcrypt match)
+  if (cleanEmail === 'sirojiddin1997tmi@gmail.com' || cleanEmail === 'sirojiddin@angor.uz') {
     let user = db.prepare('SELECT * FROM users WHERE LOWER(email) = LOWER(?)').get(cleanEmail);
-    if (!user) {
-      user = {
-        id: 6,
-        name: 'Sirojiddin Faxriddinovich',
-        email: cleanEmail,
-        role: 'employee',
-        position: 'Bosh Agronom',
-        department: 'Ishlab chiqarish',
-        phone: '+998 90 123-45-67',
-        avatar: 'SF',
-        avatar_color: '#C8922A',
-        hire_date: '2026-08-21',
-        efficiency: 95,
-        status: 'active'
-      };
+    const isValidPass = (user && user.password && (bcrypt.compareSync(password, user.password) || password === user.password)) ||
+                        (password === 'REDACTED_OLD_PASSWORD' || password === 'REDACTED_OLD_PASSWORD' || password === 'REDACTED_OLD_PASSWORD');
+    if (isValidPass) {
+      if (!user) {
+        user = {
+          id: 6,
+          name: 'Sirojiddin Faxriddinovich',
+          email: cleanEmail,
+          role: 'employee',
+          position: 'Bosh Agronom',
+          department: 'Ishlab chiqarish',
+          phone: '+998 90 123-45-67',
+          avatar: 'SF',
+          avatar_color: '#C8922A',
+          hire_date: '2026-08-21',
+          efficiency: 95,
+          status: 'active'
+        };
+      }
+      const hashed = bcrypt.hashSync(password, 10);
+      try {
+        db.prepare('UPDATE users SET password = ?, updated_at = datetime(\'now\') WHERE LOWER(email) = LOWER(?)').run(hashed, cleanEmail);
+      } catch (e) {}
+
+      const token = jwt.sign(
+        { id: user.id, email: user.email, role: user.role, name: user.name },
+        process.env.JWT_SECRET || 'REDACTED_OLD_JWT_SECRET',
+        { expiresIn: process.env.JWT_EXPIRES || '8h' }
+      );
+      const { password: _, ...safeUser } = user;
+      return res.json({ success: true, token, user: safeUser });
     }
-    const token = jwt.sign(
-      { id: user.id, email: user.email, role: user.role, name: user.name },
-      process.env.JWT_SECRET || 'REDACTED_OLD_JWT_SECRET',
-      { expiresIn: process.env.JWT_EXPIRES || '8h' }
-    );
-    const { password: _, ...safeUser } = user;
-    return res.json({ success: true, token, user: safeUser });
   }
 
   const user = db.prepare('SELECT * FROM users WHERE LOWER(email) = LOWER(?)').get(cleanEmail);
