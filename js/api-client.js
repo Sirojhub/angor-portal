@@ -28,7 +28,7 @@ const API = {
       return await res.json();
     } catch (e) {
       console.warn(`[API] ${endpoint} ga ulanishda xato:`, e.message);
-      return null;
+      return { success: false, error: e.message };
     }
   },
 
