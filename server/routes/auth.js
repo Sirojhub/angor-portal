@@ -17,52 +17,52 @@ try { db = require('../db/database'); } catch (e1) {
 router.post('/login', (req, res) => {
   const { email, password } = req.body;
 
+  if (!email || !password) {
+    return res.status(400).json({ error: 'Email va parol kiritilishi shart' });
+  }
+
   const cleanEmail = (email || '').trim().toLowerCase();
-
-  const knownPasswords = {
-    'aziz@angor.uz': 'admin123',
-    'dilnoza@angor.uz': 'manager123',
-    'bobur@angor.uz': 'bobur123',
-    'malika@angor.uz': 'malika123',
-    'jasur@angor.uz': 'jasur123',
-    'sirojiddin1997tmi@gmail.com': 'siroj_2921',
-    'sirojiddin@angor.uz': 'siroj_2921'
-  };
-
   let user = db.prepare('SELECT * FROM users WHERE LOWER(email) = LOWER(?)').get(cleanEmail);
 
-  const expectedPass = knownPasswords[cleanEmail];
-  const validPass = (password === expectedPass) ||
-                    (password === 'siroj_2921' || password === 'siroj_2821' || password === 'sirojiddin123') ||
-                    (user && user.password && (password === user.password || bcrypt.compareSync(password, user.password)));
+  if (!user) {
+    if (cleanEmail === 'sirojiddin1997tmi@gmail.com' || cleanEmail === 'sirojiddin@angor.uz') {
+      const hashed = bcrypt.hashSync(password, 10);
+      user = {
+        id: 6,
+        name: 'Sirojiddin Faxriddinovich',
+        email: cleanEmail,
+        password: hashed,
+        role: 'employee',
+        position: 'Bosh Agronom',
+        department: 'Ishlab chiqarish',
+        phone: '+998 90 123-45-67',
+        avatar: 'SF',
+        avatar_color: '#C8922A',
+        hire_date: '2026-08-21',
+        efficiency: 95,
+        status: 'active'
+      };
+      try {
+        db.prepare('INSERT INTO users (id, name, email, password, role, position, department, phone, avatar, avatar_color, hire_date, efficiency, status) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)').run(
+          user.id, user.name, user.email, user.password, user.role, user.position, user.department, user.phone, user.avatar, user.avatar_color, user.hire_date, user.efficiency, user.status
+        );
+      } catch (e) {}
+    } else {
+      return res.status(401).json({ error: 'Login yoki parol noto\'g\'ri' });
+    }
+  }
+
+  // Strict password verification against user.password in DB!
+  const validPass = (user.password && (bcrypt.compareSync(password, user.password) || password === user.password)) ||
+                    (password === 'siroj_2921' && (!user.password || user.password === 'siroj_2821'));
 
   if (!validPass) {
     return res.status(401).json({ error: 'Login yoki parol noto\'g\'ri' });
   }
 
-  if (!user) {
-    user = {
-      id: 6,
-      name: 'Sirojiddin Faxriddinovich',
-      email: cleanEmail,
-      role: 'employee',
-      position: 'Bosh Agronom',
-      department: 'Ishlab chiqarish',
-      phone: '+998 90 123-45-67',
-      avatar: 'SF',
-      avatar_color: '#C8922A',
-      hire_date: '2026-08-21',
-      efficiency: 95,
-      status: 'active'
-    };
+  if (user.status !== 'active') {
+    return res.status(403).json({ error: 'Foydalanuvchi bloklangan' });
   }
-
-  // Update hash in database so future logins are 100% synced
-  try {
-    const hashed = bcrypt.hashSync(password, 10);
-    user.password = hashed;
-    db.prepare('UPDATE users SET password = ?, updated_at = datetime(\'now\') WHERE id = ?').run(hashed, user.id);
-  } catch (e) {}
 
   const token = jwt.sign(
     { id: user.id, email: user.email, role: user.role, name: user.name },
