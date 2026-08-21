@@ -45,9 +45,9 @@ app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
 function loadRoute(name) {
   const candidates = [
-    `./routes/${name}`,
     `./server/routes/${name}`,
-    `../server/routes/${name}`
+    `../server/routes/${name}`,
+    `./routes/${name}`
   ];
   for (const c of candidates) {
     try {
