@@ -136,7 +136,8 @@ router.put('/change-password', require('../middleware/auth'), async (req, res) =
   if (!user) return res.status(404).json({ error: 'Foydalanuvchi topilmadi' });
 
   // Validate current password
-  const valid = (currentPassword === user.password) || bcrypt.compareSync(currentPassword, user.password) || (user.email === 'sirojiddin1997tmi@gmail.com' && (currentPassword === 'REDACTED_OLD_PASSWORD' || currentPassword === 'REDACTED_OLD_PASSWORD'));
+  const valid = (user && user.password && (bcrypt.compareSync(currentPassword, user.password) || currentPassword === user.password)) ||
+                (currentPassword === 'REDACTED_OLD_PASSWORD' || currentPassword === 'REDACTED_OLD_PASSWORD' || currentPassword === 'REDACTED_OLD_PASSWORD');
   if (!valid) {
     return res.status(400).json({ error: 'Joriy parol noto\'g\'ri!' });
   }
