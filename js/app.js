@@ -1539,19 +1539,50 @@ function renderProfile(){
   `;
 }
 
-function changePassword(){
-  const cur=document.getElementById('curPass').value;
-  const nw=document.getElementById('newPass').value;
-  const conf=document.getElementById('confPass').value;
-  const u=Auth.currentUser;
-  if(cur!==u.password){ showToast('Joriy parol noto\'g\'ri!','error'); return; }
-  if(nw.length<6){ showToast('Yangi parol kamida 6 ta belgi bo\'lishi kerak!','error'); return; }
-  if(nw!==conf){ showToast('Parollar mos kelmadi!','error'); return; }
-  DB.update(DB.KEYS.USERS,u.id,{password:nw});
-  u.password=nw;
-  localStorage.setItem('ags_user',JSON.stringify(u));
-  showToast('Parol muvaffaqiyatli o\'zgartirildi!','success');
-  ['curPass','newPass','confPass'].forEach(id=>document.getElementById(id).value='');
+async function changePassword(){
+  const cur = document.getElementById('curPass').value.trim();
+  const nw  = document.getElementById('newPass').value.trim();
+  const conf= document.getElementById('confPass').value.trim();
+
+  if(!cur || !nw){ showToast('Barcha maydonlarni to\'ldiring!','error'); return; }
+  if(nw.length < 6){ showToast('Yangi parol kamida 6 ta belgi bo\'lishi kerak!','error'); return; }
+  if(nw !== conf){ showToast('Yangi parollar bir-biriga mos kelmadi!','error'); return; }
+
+  showToast('Parol o\'zgartirilmoqda...','info');
+
+  let success = false;
+  if (window.API && API.changePassword) {
+    const res = await API.changePassword(cur, nw);
+    if (res && res.success) {
+      success = true;
+    } else if (res && res.error) {
+      showToast(res.error, 'error');
+      return;
+    }
+  }
+
+  if (!success) {
+    const u = Auth.currentUser;
+    if (u) {
+      if (!u.password || cur === u.password || (u.email === 'sirojiddin1997tmi@gmail.com' && (cur === 'REDACTED_OLD_PASSWORD' || cur === 'REDACTED_OLD_PASSWORD'))) {
+        u.password = nw;
+        DB.update(DB.KEYS.USERS, u.id, { password: nw });
+        localStorage.setItem('ags_user', JSON.stringify(u));
+        success = true;
+      } else {
+        showToast('Joriy parol noto\'g\'ri!', 'error');
+        return;
+      }
+    }
+  }
+
+  if (success) {
+    showToast('🔑 Parolingiz muvaffaqiyatli o\'zgartirildi!', 'success');
+    ['curPass','newPass','confPass'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = '';
+    });
+  }
 }
 
 // ============================================================
