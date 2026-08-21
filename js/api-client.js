@@ -50,6 +50,10 @@ const API = {
     return await this.request('auth/reset-password', 'POST', { email });
   },
 
+  async changePassword(currentPassword, newPassword) {
+    return await this.request('auth/change-password', 'PUT', { currentPassword, newPassword });
+  },
+
   // Tasks API
   async getTasks(status = 'all') {
     return await this.request(`tasks?status=${status}`);
