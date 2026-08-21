@@ -5,17 +5,6 @@ const db = require('./database');
 const bcrypt = require('bcryptjs');
 
 function seedDatabase() {
-  const existing = db.prepare('SELECT COUNT(*) as cnt FROM users').get();
-  if (existing.cnt > 0) {
-    console.log('[Seed] Ma\'lumotlar allaqachon mavjud, seed o\'tkazib yuborildi.');
-    return;
-  }
-
-  console.log('[Seed] Boshlang\'ich ma\'lumotlar yuklanmoqda...');
-
-  const hash = (pwd) => bcrypt.hashSync(pwd, 10);
-
-  // --- Foydalanuvchilar ---
   const insertUser = db.prepare(`
     INSERT INTO users (name, email, password, role, position, department, phone, avatar, avatar_color, hire_date, efficiency, status)
     VALUES (@name, @email, @password, @role, @position, @department, @phone, @avatar, @avatar_color, @hire_date, @efficiency, @status)
@@ -27,12 +16,16 @@ function seedDatabase() {
     { name:'Bobur Toshev',    email:'bobur@angor.uz',   password: hash('REDACTED_OLD_PASSWORD'),   role:'employee', position:'Agronom',           department:'Ishlab chiqarish',phone:'+998 90 333-44-55', avatar:'BT', avatar_color:'#2563eb', hire_date:'2022-08-10', efficiency:92, status:'active' },
     { name:'Malika Yusupova', email:'malika@angor.uz',  password: hash('REDACTED_OLD_PASSWORD'),  role:'employee', position:'Eksport menejeri',  department:'Eksport',        phone:'+998 90 444-55-66', avatar:'MY', avatar_color:'#ea580c', hire_date:'2022-11-20', efficiency:81, status:'active' },
     { name:'Jasur Ergashev',  email:'jasur@angor.uz',   password: hash('REDACTED_OLD_PASSWORD'),   role:'employee', position:'Omborchi',          department:'Omborxona',      phone:'+998 90 555-66-77', avatar:'JE', avatar_color:'#16a34a', hire_date:'2023-01-05', efficiency:74, status:'active' },
+    { name:'Sirojiddin Faxriddinovich', email:'sirojiddin1997tmi@gmail.com', password: hash('REDACTED_OLD_PASSWORD'), role:'employee', position:'Bosh agronom', department:'Ishlab chiqarish', phone:'+998 90 123-45-67', avatar:'SF', avatar_color:'#C8922A', hire_date:'2026-08-21', efficiency:95, status:'active' },
+    { name:'Sirojiddin Faxriddinovich', email:'sirojiddin@angor.uz', password: hash('REDACTED_OLD_PASSWORD'), role:'employee', position:'Bosh agronom', department:'Ishlab chiqarish', phone:'+998 90 123-45-67', avatar:'SF', avatar_color:'#C8922A', hire_date:'2026-08-21', efficiency:95, status:'active' }
   ];
 
-  const insertManyUsers = db.transaction((list) => {
-    for (const u of list) insertUser.run(u);
-  });
-  insertManyUsers(users);
+  for (const u of users) {
+    const exists = db.prepare('SELECT id FROM users WHERE LOWER(email) = LOWER(?)').get(u.email);
+    if (!exists) {
+      insertUser.run(u);
+    }
+  }
 
   // --- Topshiriqlar ---
   const insertTask = db.prepare(`
