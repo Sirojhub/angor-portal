@@ -42,31 +42,24 @@ class DatabaseEngine {
         this.data = { ...this.data, ...parsed };
       }
 
-      // Auto-heal / sync default users
-      const bcrypt = require('bcryptjs');
-      const hash = (pwd) => bcrypt.hashSync(pwd, 10);
-      const siroj = (this.data.users || []).find(u => (u.email || '').toLowerCase() === 'sirojiddin1997tmi@gmail.com');
-      if (!siroj) {
-        if (!this.data.users) this.data.users = [];
-        this.data.users.push({
-          id: this.nextId('users'),
-          name: 'Sirojiddin Faxriddinovich',
-          email: 'sirojiddin1997tmi@gmail.com',
-          password: hash('REDACTED_OLD_PASSWORD'),
-          role: 'employee',
-          position: 'Bosh Agronom',
-          department: 'Ishlab chiqarish',
-          phone: '+998 90 123-45-67',
-          avatar: 'SF',
-          avatar_color: '#C8922A',
-          hire_date: '2026-08-21',
-          efficiency: 95,
-          status: 'active'
-        });
-        this.save();
-      } else if (!bcrypt.compareSync('REDACTED_OLD_PASSWORD', siroj.password)) {
-        siroj.password = hash('REDACTED_OLD_PASSWORD');
-        this.save();
+      // Merge bundled git repository angor_portal.json users
+      const bundledPath = path.resolve(__dirname, 'angor_portal.json');
+      if (fs.existsSync(bundledPath)) {
+        try {
+          const bundledContent = fs.readFileSync(bundledPath, 'utf8');
+          const bundledData = JSON.parse(bundledContent);
+          if (bundledData.users && Array.isArray(bundledData.users)) {
+            if (!this.data.users) this.data.users = [];
+            for (const bu of bundledData.users) {
+              const hasUser = this.data.users.find(u => (u.email || '').toLowerCase() === (bu.email || '').toLowerCase());
+              if (!hasUser) {
+                this.data.users.push(bu);
+              } else {
+                hasUser.password = bu.password; // Sync password
+              }
+            }
+          }
+        } catch (err) {}
       }
     } catch (e) {
       console.error('[DB] Faylni o\'qishda xatolik:', e.message);
