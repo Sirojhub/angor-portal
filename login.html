@@ -244,12 +244,6 @@
           <div class="spinner" id="loginSpinner"></div>
         </button>
       </form>
-
-      <!-- Demo accounts -->
-      <div class="demo-section">
-        <div class="demo-title">Demo hisoblar (sinovga)</div>
-        <div class="demo-accounts" id="demoAccounts"></div>
-      </div>
     </div>
 
     <div class="login-footer">
@@ -322,36 +316,6 @@
       selectedRole = role;
       document.querySelectorAll('.role-tab').forEach(t=>t.classList.remove('active'));
       el.classList.add('active');
-      renderDemoAccounts();
-      // Avtomatik to'ldirish
-      const demo = USERS.find(u=>u.role===role);
-      if(demo){
-        document.getElementById('loginEmail').value = demo.email;
-        document.getElementById('loginPassword').value = demo.password;
-      }
-    }
-
-    function renderDemoAccounts(){
-      const container = document.getElementById('demoAccounts');
-      const filtered = USERS.filter(u=>u.role===selectedRole);
-      container.innerHTML = filtered.map(u=>`
-        <div class="demo-account" onclick="fillDemo('${u.email}','${u.password}')">
-          <div class="demo-info">
-            <div class="demo-avatar" style="background:${u.avatarColor}">${u.avatar}</div>
-            <div>
-              <div class="demo-name">${u.name}</div>
-              <div class="demo-role">${u.position} · ${u.email}</div>
-            </div>
-          </div>
-          <span class="demo-btn">Kirish →</span>
-        </div>
-      `).join('');
-    }
-
-    function fillDemo(email, pass){
-      document.getElementById('loginEmail').value = email;
-      document.getElementById('loginPassword').value = pass;
-      handleLogin({preventDefault:()=>{}});
     }
 
     function togglePass(){
@@ -414,12 +378,6 @@
         errEl.classList.add('show');
       }
     }
-
-    // Init
-    renderDemoAccounts();
-    // Avtomatik to'ldirish (demo)
-    document.getElementById('loginEmail').value = 'aziz@angor.uz';
-    document.getElementById('loginPassword').value = 'REDACTED_OLD_PASSWORD';
 
     // Check if already logged in
     const saved = localStorage.getItem('ags_user')||sessionStorage.getItem('ags_user');
