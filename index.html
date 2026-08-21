@@ -1,0 +1,1238 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Angor Agro Star — Boshqaruv Paneli</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+<!-- ============================================================
+     HEADER
+============================================================ -->
+<header class="header">
+  <a href="#" class="header-logo" onclick="navigate('dashboard')">
+    <div class="header-logo-icon">A</div>
+    <div class="header-logo-text">
+      <h1>ANGOR AGRO STAR</h1>
+      <span>Korporativ boshqaruv tizimi · «Uzagrostar xolding»</span>
+    </div>
+  </a>
+
+  <div class="header-topbar" id="headerTopbar">
+    O'ZBEKISTON RESPUBLIKASI · SURXONDARYO VILOYATI · ANGOR TUMANI
+  </div>
+
+  <div class="header-right">
+    <div class="header-time" id="headerTime"></div>
+
+    <!-- Bildirishnomalar -->
+    <div class="dropdown">
+      <div class="btn-icon" onclick="toggleNotifPanel()" id="notifBtn">
+        🔔
+        <span class="badge" id="notifBadge">0</span>
+      </div>
+      <div class="notif-panel" id="notifPanel">
+        <div class="notif-panel-header">
+          Bildirishnomalar
+          <span style="font-size:12px;font-weight:400;color:#64748b;cursor:pointer" onclick="markAllRead()">Hammasini o'qildi deb belgilash</span>
+        </div>
+        <div id="notifList"></div>
+      </div>
+    </div>
+
+    <!-- User menu -->
+    <div class="dropdown">
+      <div style="display:flex;align-items:center;gap:10px;cursor:pointer" onclick="toggleUserMenu()">
+        <div class="user-avatar" id="userAvatar">AK</div>
+        <div class="user-info">
+          <div class="name" id="userName">Aziz Karimov</div>
+          <div class="role" id="userRole">Direktor</div>
+        </div>
+      </div>
+      <div class="dropdown-menu" id="userMenu">
+        <div class="dropdown-item" onclick="navigate('profile')">👤 Mening profilim</div>
+        <div class="dropdown-item" onclick="navigate('settings')">⚙️ Sozlamalar</div>
+        <div class="dropdown-divider"></div>
+        <div class="dropdown-item danger" onclick="Auth.logout()">🚪 Chiqish</div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- ============================================================
+     SIDEBAR
+============================================================ -->
+<nav class="sidebar" id="sidebar">
+  <div style="padding:12px 8px 4px">
+    <div class="nav-section-label">Asosiy</div>
+    <div class="nav-item active" id="nav-dashboard" onclick="navigate('dashboard')">
+      <span class="nav-icon">🏠</span> Bosh sahifa
+    </div>
+    <div class="nav-item" id="nav-tasks" onclick="navigate('tasks')">
+      <span class="nav-icon">📋</span> Topshiriqlar
+      <span class="nav-badge" id="navBadgeTasks">0</span>
+    </div>
+    <div class="nav-item" id="nav-documents" onclick="navigate('documents')">
+      <span class="nav-icon">📁</span> Hujjatlar
+    </div>
+    <div class="nav-item" id="nav-clients" onclick="navigate('clients')">
+      <span class="nav-icon">🤝</span> Mijozlar
+    </div>
+
+    <div class="nav-section-label">Ishlab chiqarish</div>
+    <div class="nav-item" id="nav-warehouse" onclick="navigate('warehouse')">
+      <span class="nav-icon">🏭</span> Omborxona
+      <span class="nav-badge warning" id="navBadgeWH" style="display:none">!</span>
+    </div>
+    <div class="nav-item" id="nav-laboratory" onclick="navigate('laboratory')">
+      <span class="nav-icon">🔬</span> Laboratoriya
+    </div>
+    <div class="nav-item" id="nav-analytics" onclick="navigate('analytics')">
+      <span class="nav-icon">📊</span> Analitika
+    </div>
+
+    <div class="nav-section-label">Xodimlar</div>
+    <div class="nav-item" id="nav-employees" onclick="navigate('employees')">
+      <span class="nav-icon">👥</span> Xodimlar
+    </div>
+    <div class="nav-item" id="nav-ai" onclick="navigate('ai')">
+      <span class="nav-icon">🤖</span> AI Yordamchi
+    </div>
+
+    <div class="nav-section-label" id="adminSection" style="display:none">Admin</div>
+    <div class="nav-item" id="nav-admin" onclick="navigate('admin')" style="display:none">
+      <span class="nav-icon">⚙️</span> Admin panel
+    </div>
+    <div class="nav-item" id="nav-logs" onclick="navigate('logs')" style="display:none">
+      <span class="nav-icon">📜</span> Faoliyat logi
+    </div>
+  </div>
+
+  <div class="sidebar-footer">
+    <div class="nav-item" id="nav-profile" onclick="navigate('profile')">
+      <span class="nav-icon">👤</span> Mening profilim
+    </div>
+  </div>
+</nav>
+
+<!-- ============================================================
+     MAIN CONTENT
+============================================================ -->
+<main class="main">
+
+  <!-- ======================================================
+       BOSH SAHIFA (Dashboard)
+  ====================================================== -->
+  <div class="page active" id="page-dashboard">
+    <div class="breadcrumb">
+      <a href="#">Bosh sahifa</a>
+      <span>/</span>
+      <span>Boshqaruv paneli</span>
+    </div>
+    <div class="page-header">
+      <div class="page-title">
+        <h2>Boshqaruv paneli</h2>
+        <p id="dashboardDate"></p>
+      </div>
+      <div class="page-actions">
+        <button class="btn btn-outline" onclick="navigate('analytics')">📊 Hisobot</button>
+        <button class="btn btn-primary btn-new-task" onclick="openNewTaskModal()">+ Yangi topshiriq</button>
+      </div>
+    </div>
+
+    <!-- KPI Cards -->
+    <div class="kpi-grid" id="kpiGrid"></div>
+
+    <!-- Bottom grid -->
+    <div style="display:grid;grid-template-columns:1fr 380px;gap:16px">
+      <!-- Activity feed -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">📋 So'nggi faoliyat</span>
+          <a href="#" style="font-size:12px;color:#64748b" onclick="navigate('logs');return false">Barchasini ko'rish →</a>
+        </div>
+        <div class="card-body" style="padding:0 20px">
+          <div class="activity-list" id="activityList"></div>
+        </div>
+      </div>
+
+      <!-- Right column -->
+      <div style="display:flex;flex-direction:column;gap:16px">
+        <!-- Employee efficiency -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">👥 Xodimlar samaradorligi</span>
+          </div>
+          <div class="card-body">
+            <div id="efficiencyList"></div>
+          </div>
+        </div>
+
+        <!-- Overdue tasks -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title" style="color:#dc2626">⏰ Muddati o'tgan</span>
+          </div>
+          <div class="card-body" style="padding:12px 16px">
+            <div id="overdueDashList"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================
+       TOPSHIRIQLAR
+  ====================================================== -->
+  <div class="page" id="page-tasks">
+    <div class="breadcrumb">
+      <a href="#" onclick="navigate('dashboard');return false">Bosh sahifa</a>
+      <span>/</span><span>Topshiriqlar</span>
+    </div>
+    <div class="page-header">
+      <div class="page-title">
+        <h2>Topshiriqlar reyestri</h2>
+      </div>
+      <div class="page-actions">
+        <button class="btn btn-primary btn-new-task" onclick="openNewTaskModal()">+ Yangi topshiriq</button>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs" id="taskTabs"></div>
+
+    <!-- Filters -->
+    <div class="filters-bar">
+      <div class="search-box" style="max-width:320px">
+        <span class="icon">🔍</span>
+        <input type="text" placeholder="Topshiriq qidirish..." id="taskSearch" oninput="renderTasks()">
+      </div>
+      <select class="filter-select" id="taskFilterUser" onchange="renderTasks()">
+        <option value="">Barcha xodimlar</option>
+      </select>
+      <select class="filter-select" id="taskFilterPriority" onchange="renderTasks()">
+        <option value="">Barcha muhimlik</option>
+        <option value="high">Yuqori</option>
+        <option value="medium">O'rta</option>
+        <option value="low">Past</option>
+      </select>
+      <select class="filter-select" id="taskFilterCategory" onchange="renderTasks()">
+        <option value="">Barcha turkum</option>
+      </select>
+    </div>
+
+    <div class="card">
+      <div class="table-wrap">
+        <table id="tasksTable">
+          <thead>
+            <tr>
+              <th style="width:40px">№</th>
+              <th>TOPSHIRIQ</th>
+              <th>MAS'UL</th>
+              <th>MUDDAT</th>
+              <th>MUHIMLIK</th>
+              <th>HOLAT</th>
+              <th style="width:140px">AMALLAR</th>
+            </tr>
+          </thead>
+          <tbody id="tasksBody"></tbody>
+        </table>
+      </div>
+      <div style="padding:12px 16px;border-top:1px solid var(--border)">
+        <div class="pagination">
+          <span id="taskPaginInfo">Jami 0 ta topshiriq</span>
+          <div class="pagination-btns" id="taskPaginBtns"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================
+       HUJJATLAR
+  ====================================================== -->
+  <div class="page" id="page-documents">
+    <div class="breadcrumb">
+      <a href="#" onclick="navigate('dashboard');return false">Bosh sahifa</a>
+      <span>/</span><span>Hujjatlar</span>
+    </div>
+    <div class="page-header">
+      <div class="page-title">
+        <h2>Hujjatlar arxivi</h2>
+      </div>
+      <div class="page-actions">
+        <button class="btn btn-outline" onclick="exportDocs()">↓ Eksport</button>
+        <button class="btn btn-primary" onclick="openUploadModal()">↑ Hujjat yuklash</button>
+      </div>
+    </div>
+
+    <!-- Category tabs -->
+    <div class="tabs" id="docTabs"></div>
+
+    <div class="filters-bar">
+      <div class="search-box" style="max-width:320px">
+        <span class="icon">🔍</span>
+        <input type="text" placeholder="Hujjat qidirish..." id="docSearch" oninput="renderDocs()">
+      </div>
+      <select class="filter-select" id="docFilterUser" onchange="renderDocs()">
+        <option value="">Barcha xodimlar</option>
+      </select>
+    </div>
+
+    <div class="card">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>HUJJAT NOMI</th>
+              <th>KATEGORIYA</th>
+              <th>VERSIYA</th>
+              <th>KIM YUKLADI</th>
+              <th>SANA</th>
+              <th>HAJM</th>
+              <th>HOLAT</th>
+              <th style="width:120px">AMALLAR</th>
+            </tr>
+          </thead>
+          <tbody id="docsBody"></tbody>
+        </table>
+      </div>
+      <div style="padding:12px 16px;border-top:1px solid var(--border)">
+        <span id="docCount" style="font-size:13px;color:#64748b"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================
+       MIJOZLAR
+  ====================================================== -->
+  <div class="page" id="page-clients">
+    <div class="breadcrumb">
+      <a href="#" onclick="navigate('dashboard');return false">Bosh sahifa</a>
+      <span>/</span><span>Mijozlar</span>
+    </div>
+    <div class="page-header">
+      <div class="page-title">
+        <h2>Mijozlar reyestri</h2>
+      </div>
+      <div class="page-actions">
+        <button class="btn btn-primary" onclick="openNewClientModal()">+ Yangi mijoz</button>
+      </div>
+    </div>
+
+    <div class="filters-bar">
+      <div class="search-box" style="max-width:360px">
+        <span class="icon">🔍</span>
+        <input type="text" placeholder="Firma nomi yoki STIR bo'yicha qidirish..." id="clientSearch" oninput="renderClients()">
+      </div>
+      <select class="filter-select" id="clientFilterRisk" onchange="renderClients()">
+        <option value="">Barcha xavf darajasi</option>
+        <option value="low">Past xavf</option>
+        <option value="medium">O'rtacha xavf</option>
+        <option value="high">Yuqori xavf</option>
+      </select>
+    </div>
+
+    <div class="card">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>FIRMA NOMI</th>
+              <th>STIR</th>
+              <th>ALOQA</th>
+              <th>MAS'UL SHAXS</th>
+              <th>XAVF DARAJASI</th>
+              <th>HOLAT</th>
+              <th style="width:80px">AMALLAR</th>
+            </tr>
+          </thead>
+          <tbody id="clientsBody"></tbody>
+        </table>
+      </div>
+      <div style="padding:12px 16px;border-top:1px solid var(--border)">
+        <span id="clientCount" style="font-size:13px;color:#64748b"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================
+       OMBORXONA
+  ====================================================== -->
+  <div class="page" id="page-warehouse">
+    <div class="breadcrumb">
+      <a href="#" onclick="navigate('dashboard');return false">Bosh sahifa</a>
+      <span>/</span><span>Omborxona</span>
+    </div>
+    <div class="page-header">
+      <div class="page-title">
+        <h2>Omborxona boshqaruvi</h2>
+      </div>
+      <div class="page-actions">
+        <button class="btn btn-outline" onclick="openWarehouseTxnModal('chiqim')">↑ Chiqim</button>
+        <button class="btn btn-primary" onclick="openWarehouseTxnModal('kirim')">↓ Kirim</button>
+      </div>
+    </div>
+
+    <!-- KPI -->
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:20px" id="whKpi"></div>
+
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">📦 Mahsulotlar zaxirasi</span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>MAHSULOT</th>
+              <th>KATEGORIYA</th>
+              <th>JORIY ZAXIRA</th>
+              <th>MIN NORMA</th>
+              <th>JOYLASHUV</th>
+              <th>HOLAT</th>
+              <th style="width:100px">AMALLAR</th>
+            </tr>
+          </thead>
+          <tbody id="warehouseBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================
+       LABORATORIYA
+  ====================================================== -->
+  <div class="page" id="page-laboratory">
+    <div class="breadcrumb">
+      <a href="#" onclick="navigate('dashboard');return false">Bosh sahifa</a>
+      <span>/</span><span>Laboratoriya</span>
+    </div>
+
+    <!-- "Tayyorlanmoqda" ekrani -->
+    <div style="
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 65vh;
+      text-align: center;
+      padding: 40px 20px;
+    ">
+      <!-- Animatsiyali ikonka -->
+      <div style="
+        width: 110px;
+        height: 110px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #e8effc 0%, #d0dff8 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 52px;
+        margin-bottom: 28px;
+        box-shadow: 0 8px 32px rgba(26,58,107,0.13);
+        animation: labPulse 2.2s ease-in-out infinite;
+      ">🔬</div>
+
+      <!-- Sarlavha -->
+      <h2 style="
+        font-size: 24px;
+        font-weight: 800;
+        color: var(--text);
+        margin-bottom: 10px;
+        letter-spacing: -0.3px;
+      ">Bu bo'lim hali yakunlanmagan</h2>
+
+      <!-- Tavsif -->
+      <p style="
+        font-size: 14px;
+        color: var(--text-muted);
+        max-width: 420px;
+        line-height: 1.7;
+        margin-bottom: 10px;
+      ">
+        <strong>Laboratoriya tahlillari</strong> bo'limi hozirda ishlab chiqilmoqda.<br>
+        Tez orada tuproq, suv va hosil namunalari tahlilini bu yerda kuzatishingiz mumkin bo'ladi.
+      </p>
+
+      <!-- Status badge -->
+      <div style="
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: #fef3c7;
+        color: #b45309;
+        font-size: 12px;
+        font-weight: 700;
+        padding: 6px 16px;
+        border-radius: 20px;
+        margin-bottom: 32px;
+        letter-spacing: 0.5px;
+      ">
+        <span style="width:7px;height:7px;border-radius:50%;background:#d97706;display:inline-block;animation:labBlink 1.2s ease-in-out infinite"></span>
+        ISHLAB CHIQILMOQDA
+      </div>
+
+      <!-- Progress bar -->
+      <div style="width: 320px; margin-bottom: 32px;">
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-light);margin-bottom:6px;">
+          <span>Tayyor bo'lish holati</span>
+          <span>35%</span>
+        </div>
+        <div style="
+          width: 100%;
+          height: 8px;
+          background: #e2e8f0;
+          border-radius: 10px;
+          overflow: hidden;
+        ">
+          <div style="
+            width: 35%;
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary) 0%, var(--primary-light) 100%);
+            border-radius: 10px;
+            animation: labProgress 2s ease-in-out infinite alternate;
+          "></div>
+        </div>
+      </div>
+
+      <!-- Qaytish tugmasi -->
+      <button class="btn btn-primary" onclick="navigate('dashboard')" style="padding:10px 28px;font-size:14px;">
+        ← Bosh sahifaga qaytish
+      </button>
+    </div>
+
+    <!-- Animatsiyalar -->
+    <style>
+      @keyframes labPulse {
+        0%, 100% { transform: scale(1); box-shadow: 0 8px 32px rgba(26,58,107,0.13); }
+        50% { transform: scale(1.06); box-shadow: 0 12px 40px rgba(26,58,107,0.22); }
+      }
+      @keyframes labBlink {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.3; }
+      }
+      @keyframes labProgress {
+        0% { width: 32%; }
+        100% { width: 38%; }
+      }
+    </style>
+  </div>
+
+  <!-- ======================================================
+       ANALITIKA — vaqtincha to'xtatilgan
+  ====================================================== -->
+  <div class="page" id="page-analytics">
+    <div class="breadcrumb">
+      <a href="#" onclick="navigate('dashboard');return false">Bosh sahifa</a>
+      <span>/</span><span>Analitika</span>
+    </div>
+
+    <!-- "Tayyorlanmoqda" ekrani -->
+    <div style="
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 65vh;
+      text-align: center;
+      padding: 40px 20px;
+    ">
+      <!-- Animatsiyali ikonka -->
+      <div style="
+        width: 110px;
+        height: 110px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #e8effc 0%, #d0dff8 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 52px;
+        margin-bottom: 28px;
+        box-shadow: 0 8px 32px rgba(26,58,107,0.13);
+        animation: analyticsPulse 2.2s ease-in-out infinite;
+      ">📊</div>
+
+      <!-- Sarlavha -->
+      <h2 style="
+        font-size: 24px;
+        font-weight: 800;
+        color: var(--text);
+        margin-bottom: 10px;
+        letter-spacing: -0.3px;
+      ">Bu bo'lim hali yakunlanmagan</h2>
+
+      <!-- Tavsif -->
+      <p style="
+        font-size: 14px;
+        color: var(--text-muted);
+        max-width: 420px;
+        line-height: 1.7;
+        margin-bottom: 10px;
+      ">
+        <strong>Analitika va hisobotlar</strong> bo'limi hozirda ishlab chiqilmoqda.<br>
+        Tez orada barcha statistik va moliyaviy hisobotlarni bu yerda kuzatishingiz mumkin bo'ladi.
+      </p>
+
+      <!-- Status badge -->
+      <div style="
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: #fef3c7;
+        color: #b45309;
+        font-size: 12px;
+        font-weight: 700;
+        padding: 6px 16px;
+        border-radius: 20px;
+        margin-bottom: 32px;
+        letter-spacing: 0.5px;
+      ">
+        <span style="width:7px;height:7px;border-radius:50%;background:#d97706;display:inline-block;animation:analyticsBlink 1.2s ease-in-out infinite"></span>
+        ISHLAB CHIQILMOQDA
+      </div>
+
+      <!-- Progress bar -->
+      <div style="width: 320px; margin-bottom: 32px;">
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-light);margin-bottom:6px;">
+          <span>Tayyor bo'lish holati</span>
+          <span>40%</span>
+        </div>
+        <div style="
+          width: 100%;
+          height: 8px;
+          background: #e2e8f0;
+          border-radius: 10px;
+          overflow: hidden;
+        ">
+          <div style="
+            width: 40%;
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary) 0%, var(--primary-light) 100%);
+            border-radius: 10px;
+            animation: analyticsProgress 2s ease-in-out infinite alternate;
+          "></div>
+        </div>
+      </div>
+
+      <!-- Qaytish tugmasi -->
+      <button class="btn btn-primary" onclick="navigate('dashboard')" style="padding:10px 28px;font-size:14px;">
+        ← Bosh sahifaga qaytish
+      </button>
+    </div>
+
+    <style>
+      @keyframes analyticsPulse {
+        0%, 100% { transform: scale(1); box-shadow: 0 8px 32px rgba(26,58,107,0.13); }
+        50% { transform: scale(1.06); box-shadow: 0 12px 40px rgba(26,58,107,0.22); }
+      }
+      @keyframes analyticsBlink {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.3; }
+      }
+      @keyframes analyticsProgress {
+        0% { width: 37%; }
+        100% { width: 43%; }
+      }
+    </style>
+  </div>
+
+  <!-- ======================================================
+       XODIMLAR
+  ====================================================== -->
+  <div class="page" id="page-employees">
+    <div class="breadcrumb">
+      <a href="#" onclick="navigate('dashboard');return false">Bosh sahifa</a>
+      <span>/</span><span>Xodimlar</span>
+    </div>
+    <div class="page-header">
+      <div class="page-title">
+        <h2>Xodimlar boshqaruvi</h2>
+      </div>
+      <div class="page-actions" id="addEmpBtn">
+        <button class="btn btn-primary" onclick="openNewEmployeeModal()">+ Yangi xodim</button>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:16px;margin-bottom:20px" id="empCards"></div>
+
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">👥 Xodimlar ro'yxati</span>
+        <div style="display:flex;gap:8px">
+          <input type="text" class="form-control" style="width:200px" placeholder="Qidirish..." id="empSearch" oninput="renderEmployees()">
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>XODIM</th>
+              <th>LAVOZIM</th>
+              <th>BO'LIM</th>
+              <th>TELEFON</th>
+              <th>TOPSHIRIQLAR</th>
+              <th>SAMARADORLIK</th>
+              <th>HOLAT</th>
+              <th style="width:100px">AMALLAR</th>
+            </tr>
+          </thead>
+          <tbody id="empBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================
+       AI YORDAMCHI — vaqtincha to'xtatilgan
+  ====================================================== -->
+  <div class="page" id="page-ai">
+    <div class="breadcrumb">
+      <a href="#" onclick="navigate('dashboard');return false">Bosh sahifa</a>
+      <span>/</span><span>AI Yordamchi</span>
+    </div>
+
+    <!-- "Tayyorlanmoqda" ekrani -->
+    <div style="
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 65vh;
+      text-align: center;
+      padding: 40px 20px;
+    ">
+      <!-- Animatsiyali ikonka -->
+      <div style="
+        width: 110px;
+        height: 110px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #e8effc 0%, #d0dff8 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 52px;
+        margin-bottom: 28px;
+        box-shadow: 0 8px 32px rgba(26,58,107,0.13);
+        animation: aiPulse 2.2s ease-in-out infinite;
+      ">🤖</div>
+
+      <!-- Sarlavha -->
+      <h2 style="
+        font-size: 24px;
+        font-weight: 800;
+        color: var(--text);
+        margin-bottom: 10px;
+        letter-spacing: -0.3px;
+      ">Bu bo'lim hali yakunlanmagan</h2>
+
+      <!-- Tavsif -->
+      <p style="
+        font-size: 14px;
+        color: var(--text-muted);
+        max-width: 420px;
+        line-height: 1.7;
+        margin-bottom: 10px;
+      ">
+        <strong>AI Yordamchi</strong> bo'limi hozirda ishlab chiqilmoqda.<br>
+        Tez orada sun'iy intellekt asosida aqlli tahlillar va maslahatlarni bu yerda olishingiz mumkin bo'ladi.
+      </p>
+
+      <!-- Status badge -->
+      <div style="
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: #fef3c7;
+        color: #b45309;
+        font-size: 12px;
+        font-weight: 700;
+        padding: 6px 16px;
+        border-radius: 20px;
+        margin-bottom: 32px;
+        letter-spacing: 0.5px;
+      ">
+        <span style="width:7px;height:7px;border-radius:50%;background:#d97706;display:inline-block;animation:aiBlink 1.2s ease-in-out infinite"></span>
+        ISHLAB CHIQILMOQDA
+      </div>
+
+      <!-- Progress bar -->
+      <div style="width: 320px; margin-bottom: 32px;">
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-light);margin-bottom:6px;">
+          <span>Tayyor bo'lish holati</span>
+          <span>25%</span>
+        </div>
+        <div style="
+          width: 100%;
+          height: 8px;
+          background: #e2e8f0;
+          border-radius: 10px;
+          overflow: hidden;
+        ">
+          <div style="
+            width: 25%;
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary) 0%, var(--primary-light) 100%);
+            border-radius: 10px;
+            animation: aiProgress 2s ease-in-out infinite alternate;
+          "></div>
+        </div>
+      </div>
+
+      <!-- Qaytish tugmasi -->
+      <button class="btn btn-primary" onclick="navigate('dashboard')" style="padding:10px 28px;font-size:14px;">
+        ← Bosh sahifaga qaytish
+      </button>
+    </div>
+
+    <style>
+      @keyframes aiPulse {
+        0%, 100% { transform: scale(1); box-shadow: 0 8px 32px rgba(26,58,107,0.13); }
+        50% { transform: scale(1.06); box-shadow: 0 12px 40px rgba(26,58,107,0.22); }
+      }
+      @keyframes aiBlink {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.3; }
+      }
+      @keyframes aiProgress {
+        0% { width: 22%; }
+        100% { width: 28%; }
+      }
+    </style>
+  </div>
+
+  <!-- ======================================================
+       PROFIL
+  ====================================================== -->
+  <div class="page" id="page-profile">
+    <div class="breadcrumb">
+      <a href="#" onclick="navigate('dashboard');return false">Bosh sahifa</a>
+      <span>/</span><span>Mening profilim</span>
+    </div>
+    <div id="profileContent"></div>
+  </div>
+
+  <!-- ======================================================
+       ADMIN PANEL
+  ====================================================== -->
+  <div class="page" id="page-admin">
+    <div class="breadcrumb">
+      <a href="#" onclick="navigate('dashboard');return false">Bosh sahifa</a>
+      <span>/</span><span>Admin panel</span>
+    </div>
+    <div class="page-header">
+      <div class="page-title">
+        <h2>⚙️ Admin Panel</h2>
+        <p>Tizim boshqaruvi va sozlamalari</p>
+      </div>
+    </div>
+    <div id="adminContent"></div>
+  </div>
+
+  <!-- ======================================================
+       FAOLIYAT LOGI
+  ====================================================== -->
+  <div class="page" id="page-logs">
+    <div class="breadcrumb">
+      <a href="#" onclick="navigate('dashboard');return false">Bosh sahifa</a>
+      <span>/</span><span>Faoliyat logi</span>
+    </div>
+    <div class="page-header">
+      <div class="page-title"><h2>📜 Faoliyat logi</h2></div>
+    </div>
+    <div class="card">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>XODIM</th>
+              <th>HARAKAT</th>
+              <th>TAVSIF</th>
+              <th>VAQT</th>
+            </tr>
+          </thead>
+          <tbody id="logsBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================
+       SOZLAMALAR
+  ====================================================== -->
+  <div class="page" id="page-settings">
+    <div class="breadcrumb">
+      <a href="#" onclick="navigate('dashboard');return false">Bosh sahifa</a>
+      <span>/</span><span>Sozlamalar</span>
+    </div>
+    <div class="page-header">
+      <div class="page-title"><h2>⚙️ Tizim sozlamalari</h2></div>
+    </div>
+    <div id="settingsContent"></div>
+  </div>
+
+</main><!-- /main -->
+
+<!-- ============================================================
+     MODALS
+============================================================ -->
+
+<!-- Yangi / Tahrirlash Topshiriq -->
+<div class="modal-overlay" id="taskModal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="taskModalTitle">Yangi topshiriq</span>
+      <div class="modal-close" onclick="closeModal('taskModal')">×</div>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="taskId">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">MAS'UL XODIM *</label>
+          <select class="form-control" id="taskAssigned"></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">MUDDAT *</label>
+          <input type="date" class="form-control" id="taskDeadline">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">MUHIMLIK DARAJASI</label>
+          <select class="form-control" id="taskPriority">
+            <option value="low">Past</option>
+            <option value="medium" selected>O'rta</option>
+            <option value="high">Yuqori</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">TURKUM</label>
+          <select class="form-control" id="taskCategory">
+            <option>Ishlab chiqarish</option>
+            <option>Eksport</option>
+            <option>Moliya</option>
+            <option>Agrotexnika</option>
+            <option>Omborxona</option>
+            <option>Xarid</option>
+            <option>Texnika</option>
+            <option>Boshqaruv</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">TOPSHIRIQ SARLAVHASI *</label>
+        <input type="text" class="form-control" id="taskTitle" placeholder="Topshiriq sarlavhasini kiriting...">
+      </div>
+      <div class="form-group">
+        <label class="form-label">TOPSHIRIQ MATNI</label>
+        <textarea class="form-control" id="taskDesc" placeholder="Nima qilish kerakligini aniq yozing..."></textarea>
+      </div>
+      <div class="form-group" id="taskStatusGroup" style="display:none">
+        <label class="form-label">HOLAT</label>
+        <select class="form-control" id="taskStatus">
+          <option value="new">Yangi</option>
+          <option value="progress">Jarayonda</option>
+          <option value="review">Tasdiqlashda</option>
+          <option value="done">Bajarildi</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('taskModal')">Bekor qilish</button>
+      <button class="btn btn-primary" onclick="saveTask()">💾 Saqlash</button>
+    </div>
+  </div>
+</div>
+
+<!-- Topshiriq Ko'rish -->
+<div class="modal-overlay" id="taskViewModal">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <span class="modal-title" id="taskViewTitle">Topshiriq tafsiloti</span>
+      <div class="modal-close" onclick="closeModal('taskViewModal')">×</div>
+    </div>
+    <div class="modal-body" id="taskViewBody"></div>
+    <div class="modal-footer" id="taskViewFooter"></div>
+  </div>
+</div>
+
+<!-- Hujjat Ko'rish / Tasdiqlash -->
+<div class="modal-overlay" id="docViewModal">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <span class="modal-title" id="docViewTitle">Hujjat tafsilotlari</span>
+      <div class="modal-close" onclick="closeModal('docViewModal')">×</div>
+    </div>
+    <div class="modal-body" id="docViewBody"></div>
+    <div class="modal-footer" id="docViewFooter"></div>
+  </div>
+</div>
+
+<!-- Hujjat yuklash -->
+<div class="modal-overlay" id="uploadModal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Hujjat yuklash</span>
+      <div class="modal-close" onclick="closeModal('uploadModal')">×</div>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">HUJJAT NOMI *</label>
+        <input type="text" class="form-control" id="docTitle" placeholder="Hujjat nomini kiriting...">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">KATEGORIYA</label>
+          <select class="form-control" id="docCategory">
+            <option value="shartnoma">Shartnoma</option>
+            <option value="moliyaviy">Moliyaviy hisobot</option>
+            <option value="dala_jurnali">Dala jurnali</option>
+            <option value="buyruq">Buyruq</option>
+            <option value="sertifikat">Sertifikat</option>
+            <option value="laboratoriya">Laboratoriya</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">FAYL TURI</label>
+          <select class="form-control" id="docFileType">
+            <option value="PDF">PDF</option>
+            <option value="XLSX">XLSX</option>
+            <option value="DOCX">DOCX</option>
+            <option value="JPG">JPG / PNG (Rasm)</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">🎯 QABUL QILUVCHI MAS'UL XODIM (IXTIYORIY)</label>
+        <select class="form-control" id="docTargetUser">
+          <option value="">— Barcha xodimlar uchun (Umumiy) —</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">TAVSIF</label>
+        <textarea class="form-control" id="docDesc" placeholder="Qisqacha tavsif..."></textarea>
+      </div>
+      <div style="border:2px dashed var(--border);border-radius:10px;padding:32px;text-align:center;background:#fafafa;cursor:pointer" onclick="document.getElementById('fileInput').click()">
+        <div style="font-size:32px;margin-bottom:8px">📄</div>
+        <div style="font-size:14px;font-weight:600;color:var(--text-muted)">Faylni tanlang yoki bu yerga tashlang</div>
+        <div style="font-size:12px;color:var(--text-light);margin-top:4px">PDF, DOCX, XLSX, JPG — maks 50MB</div>
+        <input type="file" id="fileInput" style="display:none" onchange="handleFileSelect(this)">
+      </div>
+      <div id="fileSelected" style="margin-top:10px;display:none;background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:10px 14px;font-size:13px;color:#15803d"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('uploadModal')">Bekor qilish</button>
+      <button class="btn btn-primary" onclick="saveDocument()">💾 Saqlash</button>
+    </div>
+  </div>
+</div>
+
+<!-- Mijoz qo'shish -->
+<div class="modal-overlay" id="clientModal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="clientModalTitle">Yangi mijoz</span>
+      <div class="modal-close" onclick="closeModal('clientModal')">×</div>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="clientId">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">FIRMA NOMI *</label>
+          <input type="text" class="form-control" id="clientName">
+        </div>
+        <div class="form-group">
+          <label class="form-label">STIR (INN)</label>
+          <input type="text" class="form-control" id="clientInn">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">DAVLAT</label>
+          <input type="text" class="form-control" id="clientCountry" value="O'zbekiston">
+        </div>
+        <div class="form-group">
+          <label class="form-label">SHAHAR</label>
+          <input type="text" class="form-control" id="clientCity">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">MAS'UL SHAXS</label>
+          <input type="text" class="form-control" id="clientContact">
+        </div>
+        <div class="form-group">
+          <label class="form-label">TELEFON</label>
+          <input type="text" class="form-control" id="clientPhone" placeholder="+998 XX XXX-XX-XX">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">EMAIL</label>
+        <input type="email" class="form-control" id="clientEmail">
+      </div>
+      <div class="form-group">
+        <label class="form-label">IZOH</label>
+        <textarea class="form-control" id="clientNotes" placeholder="Qo'shimcha ma'lumot..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('clientModal')">Bekor qilish</button>
+      <button class="btn btn-primary" onclick="saveClient()">💾 Saqlash</button>
+    </div>
+  </div>
+</div>
+
+<!-- Xodim qo'shish -->
+<div class="modal-overlay" id="employeeModal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="empModalTitle">Yangi xodim</span>
+      <div class="modal-close" onclick="closeModal('employeeModal')">×</div>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="empId">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">TO'LIQ ISM *</label>
+          <input type="text" class="form-control" id="empName">
+        </div>
+        <div class="form-group">
+          <label class="form-label">LAVOZIM *</label>
+          <input type="text" class="form-control" id="empPosition">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">BO'LIM</label>
+          <select class="form-control" id="empDepartment">
+            <option>Boshqaruv</option>
+            <option>Moliya</option>
+            <option>Ishlab chiqarish</option>
+            <option>Eksport</option>
+            <option>Omborxona</option>
+            <option>Agrotexnika</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">ROL</label>
+          <select class="form-control" id="empRole">
+            <option value="employee">Xodim</option>
+            <option value="manager">Menejer</option>
+            <option value="director">Direktor</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">EMAIL (login) *</label>
+          <input type="email" class="form-control" id="empEmail">
+        </div>
+        <div class="form-group">
+          <label class="form-label">TELEFON</label>
+          <input type="text" class="form-control" id="empPhone">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">PAROL *</label>
+          <input type="text" class="form-control" id="empPassword" placeholder="Kamida 6 ta belgi">
+        </div>
+        <div class="form-group">
+          <label class="form-label">ISH BOSHLAGAN SANA</label>
+          <input type="date" class="form-control" id="empHireDate">
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('employeeModal')">Bekor qilish</button>
+      <button class="btn btn-primary" onclick="saveEmployee()">💾 Saqlash</button>
+    </div>
+  </div>
+</div>
+
+<!-- Mijoz drawer -->
+<div class="drawer-overlay" id="clientDrawerOverlay" onclick="closeClientDrawer()"></div>
+<div class="drawer" id="clientDrawer">
+  <div class="drawer-header">
+    <span class="drawer-title" id="clientDrawerTitle">Mijoz</span>
+    <div class="modal-close" onclick="closeClientDrawer()">×</div>
+  </div>
+  <div class="drawer-body" id="clientDrawerBody"></div>
+  <div class="drawer-footer">
+    <button class="btn btn-primary" onclick="refreshClientAI()">🤖 AI tahlilini yangilash</button>
+    <button class="btn btn-outline" onclick="editCurrentClient()">✏️ Tahrirlash</button>
+  </div>
+</div>
+
+<!-- Xodim profil drawer -->
+<div class="drawer-overlay" id="empDrawerOverlay" onclick="closeEmpDrawer()"></div>
+<div class="drawer" id="empDrawer">
+  <div class="drawer-header">
+    <span class="drawer-title" id="empDrawerTitle">Xodim profili</span>
+    <div class="modal-close" onclick="closeEmpDrawer()">×</div>
+  </div>
+  <div class="drawer-body" id="empDrawerBody"></div>
+  <div class="drawer-footer" id="empDrawerFooter"></div>
+</div>
+
+<!-- Hujjatni ko'rish va tasdiqlash modali -->
+<div class="modal-overlay" id="docPreviewModal">
+  <div class="modal" style="max-width:850px">
+    <div class="modal-header">
+      <span class="modal-title" id="docPreviewTitle">рџ“Ѓ Hujjatni ko'rib chiqish</span>
+      <div class="modal-close" onclick="closeModal('docPreviewModal')">Г—</div>
+    </div>
+    <div class="modal-body" style="padding:0">
+      <div style="display:grid;grid-template-columns:1fr 280px;min-height:480px">
+        <div style="background:#0f172a;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;color:#fff;border-right:1px solid #1e293b" id="docPreviewViewer">
+          <div style="font-size:64px;margin-bottom:16px" id="docPreviewIcon">рџ“„</div>
+          <div style="font-size:18px;font-weight:600;margin-bottom:8px;text-align:center" id="docPreviewFileName">Hujjat_nomi.pdf</div>
+          <div style="font-size:13px;color:#94a3b8;margin-bottom:24px" id="docPreviewMeta">PDF В· 2.4 MB</div>
+          <div style="display:flex;gap:12px">
+            <button class="btn btn-primary" onclick="downloadDocFile()">в†“ Yuklab olish</button>
+            <button class="btn btn-outline" style="color:#fff;border-color:#334155" onclick="printDocPreview()">рџ–ЁпёЏ Chop etish</button>
+          </div>
+        </div>
+        <div style="padding:20px;display:flex;flex-direction:column;gap:16px;background:var(--card-bg)">
+          <div>
+            <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;margin-bottom:4px">Kategoriya</div>
+            <div style="font-size:14px;font-weight:600" id="docPreviewCategory">Shartnomalar</div>
+          </div>
+          <div>
+            <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;margin-bottom:4px">Yuklagan xodim</div>
+            <div style="font-size:14px" id="docPreviewUploader">Aziz Karimov (Direktor)</div>
+          </div>
+          <div>
+            <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;margin-bottom:4px">Sana va Versiya</div>
+            <div style="font-size:13px" id="docPreviewDate">19.08.2026 В· v1.0</div>
+          </div>
+          <div>
+            <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;margin-bottom:4px">Tasdiqlash Holati</div>
+            <div id="docPreviewStatusBadge"></div>
+          </div>
+          <div style="border-top:1px solid var(--border);padding-top:12px;margin-top:auto" id="docApprovalBox">
+            <div style="font-size:12px;font-weight:700;margin-bottom:8px">вњЌпёЏ Imzolash va Tasdiqlash:</div>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="approveCurrentDoc('approved')">вњ… Tasdiqlash va Imzolash</button>
+              <button class="btn btn-outline" style="width:100%;justify-content:center;color:#dc2626;border-color:#fca5a5" onclick="approveCurrentDoc('rejected')">вќЊ Qaytarish / Rad etish</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- Toast container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- Scripts -->
+<script src="js/data.js"></script>
+<script src="js/api-client.js"></script>
+<script src="js/telegram-service.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

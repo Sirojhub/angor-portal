@@ -1,0 +1,104 @@
+// ============================================================
+// Employees Routes — /api/employees
+// ============================================================
+const express = require('express');
+const router  = express.Router();
+const db      = require('../db/database');
+const auth    = require('../middleware/auth');
+const bcrypt  = require('bcryptjs');
+
+// GET /api/employees
+router.get('/', auth, (req, res) => {
+  const users = db.prepare('SELECT id, name, email, role, position, department, phone, avatar, avatar_color, hire_date, efficiency, status, created_at FROM users ORDER BY id ASC').all();
+  res.json(users);
+});
+
+// POST /api/employees
+router.post('/', auth, (req, res) => {
+  if (req.user.role !== 'director' && req.user.role !== 'manager') {
+    return res.status(403).json({ error: 'Ruxsat berilmadi' });
+  }
+
+  const { name, email, password, role, position, department, phone, avatar, avatarColor, avatar_color, hireDate, hire_date } = req.body;
+  if (!name || !email) {
+    return res.status(400).json({ error: 'Ism va email kiritilishi shart' });
+  }
+
+  const existing = db.prepare('SELECT id FROM users WHERE email = ?').get(email);
+  if (existing) {
+    return res.status(400).json({ error: 'Bu email bilan foydalanuvchi allaqachon mavjud' });
+  }
+
+  const hash = bcrypt.hashSync(password || '123456', 10);
+  const userAvatar = avatar || name.split(' ').map(x=>x[0]).join('').toUpperCase().slice(0,2);
+  const userColor = avatarColor || avatar_color || '#C8922A';
+  const userHireDate = hireDate || hire_date || new Date().toISOString().slice(0,10);
+
+  const result = db.prepare(`
+    INSERT INTO users (name, email, password, role, position, department, phone, avatar, avatar_color, hire_date, efficiency, status)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 75, 'active')
+  `).run(name, email, hash, role || 'employee', position || 'Xodim', department || 'Boshqaruv', phone || '', userAvatar, userColor, userHireDate);
+
+  db.prepare(`INSERT INTO activity_logs (user_id, user_name, action, model, model_id, description) VALUES (?,?,?,?,?,?)`).run(
+    req.user.id, req.user.name, 'create', 'user', result.lastInsertRowid, `Yangi xodim «${name}» ni qo'shdi`
+  );
+
+  const newUser = db.prepare('SELECT id, name, email, role, position, department, phone, avatar, avatar_color, hire_date, efficiency, status FROM users WHERE id = ?').get(result.lastInsertRowid);
+  res.json({ success: true, employee: newUser });
+});
+
+// PUT /api/employees/:id
+router.put('/:id', auth, (req, res) => {
+  if (req.user.role !== 'director' && req.user.role !== 'manager' && req.user.id !== parseInt(req.params.id)) {
+    return res.status(403).json({ error: 'Ruxsat berilmadi' });
+  }
+
+  const { id } = req.params;
+  const user = db.prepare('SELECT * FROM users WHERE id = ?').get(id);
+  if (!user) return res.status(404).json({ error: 'Xodim topilmadi' });
+
+  const fields = ['name','role','position','department','phone','avatar','avatar_color','hire_date','efficiency','status'];
+  const updates = []; const values = [];
+
+  for (const f of fields) {
+    if (req.body[f] !== undefined) { updates.push(`${f} = ?`); values.push(req.body[f]); }
+  }
+
+  if (req.body.password) {
+    updates.push('password = ?');
+    values.push(bcrypt.hashSync(req.body.password, 10));
+  }
+
+  if (!updates.length) return res.status(400).json({ error: 'O\'zgartirish kiritilmadi' });
+  updates.push('updated_at = datetime(\'now\')');
+  values.push(id);
+
+  db.prepare(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`).run(...values);
+
+  db.prepare(`INSERT INTO activity_logs (user_id, user_name, action, model, model_id, description) VALUES (?,?,?,?,?,?)`).run(
+    req.user.id, req.user.name, 'update', 'user', id, `«${user.name}» xodimi ma'lumotlarini yangiladi`
+  );
+
+  const updated = db.prepare('SELECT id, name, email, role, position, department, phone, avatar, avatar_color, hire_date, efficiency, status FROM users WHERE id = ?').get(id);
+  res.json({ success: true, employee: updated });
+});
+
+// DELETE /api/employees/:id
+router.delete('/:id', auth, (req, res) => {
+  if (req.user.role !== 'director') {
+    return res.status(403).json({ error: 'Faqat direktor xodimlarni o\'chira oladi' });
+  }
+
+  const user = db.prepare('SELECT * FROM users WHERE id = ?').get(req.params.id);
+  if (!user) return res.status(404).json({ error: 'Xodim topilmadi' });
+
+  db.prepare('DELETE FROM users WHERE id = ?').run(req.params.id);
+
+  db.prepare(`INSERT INTO activity_logs (user_id, user_name, action, model, model_id, description) VALUES (?,?,?,?,?,?)`).run(
+    req.user.id, req.user.name, 'delete', 'user', req.params.id, `«${user.name}» xodimini o'chirdi`
+  );
+
+  res.json({ success: true });
+});
+
+module.exports = router;
