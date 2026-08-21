@@ -87,8 +87,8 @@
     },
     {
       "name": "Sirojiddin Faxriddinovich",
-      "email": "sirojiddin@angor.uz",
-      "password": "$2a$10$n.jakL1z1UnDHG83floNUOD2eCgcjzEI.3Gapg1ArWNNk7vId4Mfi",
+      "email": "sirojiddin1997tmi@gmail.com",
+      "password": "$2a$10$Iz5XIiJm3/HlXlw1ylGLL.k4POPnSxc21U6QxyjeDaV3Alg6clCdG",
       "role": "employee",
       "position": "Bosh Agronom",
       "department": "Ishlab chiqarish",
@@ -96,7 +96,26 @@
       "avatar": "SF",
       "avatar_color": "#C8922A",
       "hire_date": "2026-08-21",
+      "efficiency": 95,
+      "status": "active",
       "id": 6,
+      "created_at": "2026-08-21T06:38:33.081Z",
+      "updated_at": "2026-08-21T06:38:33.081Z"
+    },
+    {
+      "name": "Sirojiddin Faxriddinovich (Alt)",
+      "email": "sirojiddin@angor.uz",
+      "password": "$2a$10$Iz5XIiJm3/HlXlw1ylGLL.k4POPnSxc21U6QxyjeDaV3Alg6clCdG",
+      "role": "employee",
+      "position": "Bosh Agronom",
+      "department": "Ishlab chiqarish",
+      "phone": "+998 90 123-45-67",
+      "avatar": "SF",
+      "avatar_color": "#C8922A",
+      "hire_date": "2026-08-21",
+      "efficiency": 95,
+      "status": "active",
+      "id": 7,
       "created_at": "2026-08-21T06:38:33.081Z",
       "updated_at": "2026-08-21T06:38:33.081Z"
     }
