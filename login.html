@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kirish — Angor Agro Star Portal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+    :root{
+      --primary:#1A3A6B;--primary-dark:#122A52;--primary-light:#2a5298;
+      --accent:#C8922A;--accent-dark:#a5751e;
+      --danger:#dc2626;--success:#16a34a;
+      --border:#e2e8f0;--text:#1e293b;--text-muted:#64748b;
+    }
+    body{
+      font-family:'Inter',sans-serif;
+      min-height:100vh;
+      background:linear-gradient(135deg,var(--primary-dark) 0%,var(--primary) 40%,var(--primary-light) 100%);
+      display:flex;align-items:center;justify-content:center;
+      padding:20px;
+      position:relative;overflow:hidden;
+    }
+    /* Background pattern */
+    body::before{
+      content:'';position:absolute;inset:0;
+      background-image:radial-gradient(circle at 20% 80%,rgba(200,146,42,.15) 0%,transparent 50%),
+                       radial-gradient(circle at 80% 20%,rgba(255,255,255,.05) 0%,transparent 50%);
+    }
+    /* Floating shapes */
+    .shape{
+      position:absolute;border-radius:50%;
+      background:rgba(255,255,255,.04);
+    }
+    .shape-1{width:400px;height:400px;top:-100px;right:-100px}
+    .shape-2{width:200px;height:200px;bottom:80px;left:-50px}
+    .shape-3{width:120px;height:120px;top:40%;right:15%}
+
+    .login-wrap{
+      width:100%;max-width:440px;
+      position:relative;z-index:1;
+    }
+    /* Logo */
+    .login-logo{text-align:center;margin-bottom:32px}
+    .logo-icon{
+      width:72px;height:72px;border-radius:18px;
+      background:var(--accent);
+      display:inline-flex;align-items:center;justify-content:center;
+      font-size:32px;font-weight:800;color:var(--primary-dark);
+      box-shadow:0 8px 32px rgba(200,146,42,.4);
+      margin-bottom:16px;
+    }
+    .login-logo h1{color:#fff;font-size:22px;font-weight:800;letter-spacing:.5px}
+    .login-logo p{color:rgba(255,255,255,.6);font-size:13px;margin-top:4px}
+
+    /* Card */
+    .login-card{
+      background:#fff;border-radius:20px;padding:36px;
+      box-shadow:0 24px 64px rgba(0,0,0,.25);
+    }
+    .login-card h2{font-size:18px;font-weight:700;color:var(--text);margin-bottom:4px}
+    .login-card .sub{font-size:13px;color:var(--text-muted);margin-bottom:24px}
+
+    /* Form */
+    .form-group{margin-bottom:16px}
+    .form-label{display:block;font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:6px;letter-spacing:.3px}
+    .input-wrap{position:relative}
+    .input-icon{
+      position:absolute;left:12px;top:50%;transform:translateY(-50%);
+      font-size:16px;color:var(--text-muted);pointer-events:none;
+    }
+    .form-control{
+      width:100%;padding:11px 12px 11px 40px;
+      border:1.5px solid var(--border);border-radius:10px;
+      font-size:13px;font-family:'Inter',sans-serif;color:var(--text);
+      outline:none;transition:all .18s;background:#fafafa;
+    }
+    .form-control:focus{
+      border-color:var(--primary);background:#fff;
+      box-shadow:0 0 0 3px rgba(26,58,107,.1);
+    }
+    .toggle-pass{
+      position:absolute;right:12px;top:50%;transform:translateY(-50%);
+      cursor:pointer;font-size:16px;color:var(--text-muted);
+    }
+
+    .remember-row{
+      display:flex;align-items:center;justify-content:space-between;
+      margin-bottom:20px;font-size:13px;
+    }
+    .checkbox-wrap{display:flex;align-items:center;gap:8px;cursor:pointer}
+    .checkbox-wrap input{accent-color:var(--primary);width:15px;height:15px}
+    .forgot-link{color:var(--primary);font-weight:500;text-decoration:none}
+    .forgot-link:hover{text-decoration:underline}
+
+    .btn-login{
+      width:100%;padding:13px;border:none;
+      background:linear-gradient(135deg,var(--primary),var(--primary-light));
+      color:#fff;border-radius:10px;font-size:14px;font-weight:700;
+      cursor:pointer;font-family:'Inter',sans-serif;
+      box-shadow:0 4px 16px rgba(26,58,107,.4);
+      transition:all .2s;position:relative;overflow:hidden;
+    }
+    .btn-login:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(26,58,107,.5)}
+    .btn-login:active{transform:translateY(0)}
+    .btn-login:disabled{opacity:.7;cursor:not-allowed;transform:none}
+    .btn-login .spinner{
+      display:none;width:16px;height:16px;
+      border:2px solid rgba(255,255,255,.4);
+      border-top-color:#fff;border-radius:50%;
+      animation:spin .7s linear infinite;
+      margin:0 auto;
+    }
+    @keyframes spin{to{transform:rotate(360deg)}}
+
+    /* Error */
+    .alert-error{
+      background:#fee2e2;border:1px solid #fecaca;
+      border-radius:8px;padding:10px 14px;
+      font-size:13px;color:var(--danger);
+      margin-bottom:16px;display:none;
+      align-items:center;gap:8px;
+    }
+    .alert-error.show{display:flex}
+
+    /* Role selector */
+    .role-tabs{
+      display:grid;grid-template-columns:repeat(3,1fr);
+      gap:8px;margin-bottom:20px;
+    }
+    .role-tab{
+      padding:8px;border:1.5px solid var(--border);
+      border-radius:8px;text-align:center;cursor:pointer;
+      transition:all .18s;
+    }
+    .role-tab:hover{border-color:var(--primary)}
+    .role-tab.active{border-color:var(--primary);background:#e8effc}
+    .role-tab .icon{font-size:20px;display:block;margin-bottom:4px}
+    .role-tab .label{font-size:11px;font-weight:600;color:var(--text-muted)}
+    .role-tab.active .label{color:var(--primary)}
+
+    /* Demo accounts */
+    .demo-section{margin-top:20px;padding-top:16px;border-top:1px solid var(--border)}
+    .demo-title{font-size:11px;font-weight:700;color:var(--text-muted);letter-spacing:.5px;text-transform:uppercase;margin-bottom:10px;text-align:center}
+    .demo-accounts{display:flex;flex-direction:column;gap:6px}
+    .demo-account{
+      display:flex;align-items:center;justify-content:space-between;
+      padding:8px 12px;background:#f8fafc;border-radius:8px;
+      cursor:pointer;transition:background .15s;border:1px solid var(--border);
+    }
+    .demo-account:hover{background:#e8effc;border-color:var(--primary)}
+    .demo-info{display:flex;align-items:center;gap:8px}
+    .demo-avatar{
+      width:28px;height:28px;border-radius:6px;
+      display:flex;align-items:center;justify-content:center;
+      font-size:11px;font-weight:700;color:#fff;
+    }
+    .demo-name{font-size:12px;font-weight:600;color:var(--text)}
+    .demo-role{font-size:11px;color:var(--text-muted)}
+    .demo-btn{font-size:11px;color:var(--primary);font-weight:600}
+
+    /* Footer */
+    .login-footer{
+      text-align:center;margin-top:20px;
+      font-size:11px;color:rgba(255,255,255,.5);
+    }
+    .org-bar{
+      text-align:center;
+      font-size:11px;color:rgba(255,255,255,.5);
+      position:absolute;bottom:16px;left:0;right:0;
+      letter-spacing:.3px;
+    }
+  </style>
+</head>
+<body>
+  <div class="shape shape-1"></div>
+  <div class="shape shape-2"></div>
+  <div class="shape shape-3"></div>
+
+  <div class="login-wrap">
+    <!-- Logo -->
+    <div class="login-logo">
+      <div class="logo-icon">A</div>
+      <h1>ANGOR AGRO STAR</h1>
+      <p>O'ZBEKISTON RESPUBLIKASI · SURXONDARYO VILOYATI · ANGOR TUMANI</p>
+    </div>
+
+    <!-- Card -->
+    <div class="login-card">
+      <h2>Tizimga kirish</h2>
+      <p class="sub">Korporativ boshqaruv tizimi «Uzagrostar xolding»</p>
+
+      <!-- Role selector -->
+      <div class="role-tabs">
+        <div class="role-tab active" data-role="director" onclick="selectRole('director',this)">
+          <span class="icon">👑</span>
+          <span class="label">Direktor</span>
+        </div>
+        <div class="role-tab" data-role="manager" onclick="selectRole('manager',this)">
+          <span class="icon">📋</span>
+          <span class="label">Menejer</span>
+        </div>
+        <div class="role-tab" data-role="employee" onclick="selectRole('employee',this)">
+          <span class="icon">👤</span>
+          <span class="label">Xodim</span>
+        </div>
+      </div>
+
+      <!-- Error -->
+      <div class="alert-error" id="loginError">
+        <span>⚠️</span>
+        <span id="errorText">Login yoki parol noto'g'ri!</span>
+      </div>
+
+      <!-- Form -->
+      <form onsubmit="handleLogin(event)">
+        <div class="form-group">
+          <label class="form-label">LOGIN (EMAIL)</label>
+          <div class="input-wrap">
+            <span class="input-icon">✉️</span>
+            <input type="text" class="form-control" id="loginEmail"
+              placeholder="email@angoragrostar.uz" autocomplete="username">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">PAROL</label>
+          <div class="input-wrap">
+            <span class="input-icon">🔒</span>
+            <input type="password" class="form-control" id="loginPassword"
+              placeholder="••••••••" autocomplete="current-password">
+            <span class="toggle-pass" onclick="togglePass()">👁️</span>
+          </div>
+        </div>
+        <div class="remember-row">
+          <label class="checkbox-wrap">
+            <input type="checkbox" id="rememberMe" checked>
+            <span>Eslab qolish</span>
+          </label>
+          <a href="#" class="forgot-link">Parolni unutdim?</a>
+        </div>
+        <button type="submit" class="btn-login" id="loginBtn">
+          <span id="loginBtnText">Kirish →</span>
+          <div class="spinner" id="loginSpinner"></div>
+        </button>
+      </form>
+
+      <!-- Demo accounts -->
+      <div class="demo-section">
+        <div class="demo-title">Demo hisoblar (sinovga)</div>
+        <div class="demo-accounts" id="demoAccounts"></div>
+      </div>
+    </div>
+
+    <div class="login-footer">
+      © 2026 Angor Agro Star MCHJ · Versiya 1.0 · Ichki foydalanish uchun
+    </div>
+  </div>
+
+  <div class="org-bar">
+    O'ZBEKISTON RESPUBLIKASI · SURXONDARYO VILOYATI · ANGOR TUMANI
+  </div>
+
+  <script>
+    // ============================================================
+    // Foydalanuvchilar (localStorage + hardcoded demo)
+    // ============================================================
+    const USERS = [
+      {
+        id:1, name:'Aziz Karimov', role:'director', position:'Direktor',
+        email:'aziz@angor.uz', password:'REDACTED_OLD_PASSWORD',
+        avatar:'AK', avatarColor:'#C8922A',
+        department:'Boshqaruv', phone:'+998 90 111-22-33',
+        hireDate:'01.03.2021', efficiency:98,
+        permissions:['all']
+      },
+      {
+        id:2, name:'Dilnoza Rahimova', role:'manager', position:'Moliya menejeri',
+        email:'dilnoza@angor.uz', password:'REDACTED_OLD_PASSWORD',
+        avatar:'DR', avatarColor:'#7c3aed',
+        department:'Moliya', phone:'+998 90 222-33-44',
+        hireDate:'15.05.2022', efficiency:87,
+        permissions:['tasks','documents','reports']
+      },
+      {
+        id:3, name:'Bobur Toshev', role:'employee', position:'Agronom',
+        email:'bobur@angor.uz', password:'REDACTED_OLD_PASSWORD',
+        avatar:'BT', avatarColor:'#2563eb',
+        department:'Ishlab chiqarish', phone:'+998 90 333-44-55',
+        hireDate:'10.08.2022', efficiency:92,
+        permissions:['tasks','documents']
+      },
+      {
+        id:4, name:'Malika Yusupova', role:'employee', position:'Eksport menejeri',
+        email:'malika@angor.uz', password:'REDACTED_OLD_PASSWORD',
+        avatar:'MY', avatarColor:'#ea580c',
+        department:'Eksport', phone:'+998 90 444-55-66',
+        hireDate:'20.11.2022', efficiency:81,
+        permissions:['tasks','documents','clients']
+      },
+      {
+        id:5, name:'Jasur Ergashev', role:'employee', position:'Omborchi',
+        email:'jasur@angor.uz', password:'REDACTED_OLD_PASSWORD',
+        avatar:'JE', avatarColor:'#16a34a',
+        department:'Omborxona', phone:'+998 90 555-66-77',
+        hireDate:'05.01.2023', efficiency:74,
+        permissions:['tasks','warehouse']
+      }
+    ];
+
+    let selectedRole = 'director';
+
+    function selectRole(role, el) {
+      selectedRole = role;
+      document.querySelectorAll('.role-tab').forEach(t=>t.classList.remove('active'));
+      el.classList.add('active');
+      renderDemoAccounts();
+      // Avtomatik to'ldirish
+      const demo = USERS.find(u=>u.role===role);
+      if(demo){
+        document.getElementById('loginEmail').value = demo.email;
+        document.getElementById('loginPassword').value = demo.password;
+      }
+    }
+
+    function renderDemoAccounts(){
+      const container = document.getElementById('demoAccounts');
+      const filtered = USERS.filter(u=>u.role===selectedRole);
+      container.innerHTML = filtered.map(u=>`
+        <div class="demo-account" onclick="fillDemo('${u.email}','${u.password}')">
+          <div class="demo-info">
+            <div class="demo-avatar" style="background:${u.avatarColor}">${u.avatar}</div>
+            <div>
+              <div class="demo-name">${u.name}</div>
+              <div class="demo-role">${u.position} · ${u.email}</div>
+            </div>
+          </div>
+          <span class="demo-btn">Kirish →</span>
+        </div>
+      `).join('');
+    }
+
+    function fillDemo(email, pass){
+      document.getElementById('loginEmail').value = email;
+      document.getElementById('loginPassword').value = pass;
+      handleLogin({preventDefault:()=>{}});
+    }
+
+    function togglePass(){
+      const inp = document.getElementById('loginPassword');
+      inp.type = inp.type==='password' ? 'text' : 'password';
+    }
+
+    function handleLogin(e){
+      e.preventDefault();
+      const email = document.getElementById('loginEmail').value.trim();
+      const pass  = document.getElementById('loginPassword').value;
+      const errEl = document.getElementById('loginError');
+      const btn   = document.getElementById('loginBtn');
+      const btnText  = document.getElementById('loginBtnText');
+      const spinner  = document.getElementById('loginSpinner');
+
+      errEl.classList.remove('show');
+
+      if(!email||!pass){
+        document.getElementById('errorText').textContent='Login va parolni kiriting!';
+        errEl.classList.add('show'); return;
+      }
+
+      // Loading
+      btn.disabled=true;
+      btnText.style.display='none';
+      spinner.style.display='block';
+
+      setTimeout(()=>{
+        const user = USERS.find(u=>u.email===email && u.password===pass);
+        if(user){
+          // Save session
+          const remember = document.getElementById('rememberMe').checked;
+          const storage = remember ? localStorage : sessionStorage;
+          storage.setItem('ags_user', JSON.stringify(user));
+          storage.setItem('ags_token', 'token_'+Date.now());
+          // Redirect
+          window.location.href = 'index.html';
+        } else {
+          btn.disabled=false;
+          btnText.style.display='block';
+          spinner.style.display='none';
+          document.getElementById('errorText').textContent='Login yoki parol noto\'g\'ri!';
+          errEl.classList.add('show');
+        }
+      }, 800);
+    }
+
+    // Init
+    renderDemoAccounts();
+    // Avtomatik to'ldirish (demo)
+    document.getElementById('loginEmail').value = 'aziz@angor.uz';
+    document.getElementById('loginPassword').value = 'REDACTED_OLD_PASSWORD';
+
+    // Check if already logged in
+    const saved = localStorage.getItem('ags_user')||sessionStorage.getItem('ags_user');
+    if(saved){ window.location.href='index.html'; }
+  </script>
+</body>
+</html>
