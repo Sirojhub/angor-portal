@@ -66,8 +66,8 @@ function seedData(){
     {id:3,name:'Bobur Toshev',role:'employee',position:'Agronom',email:'bobur@angor.uz',password:'bobur123',avatar:'BT',avatarColor:'#2563eb',department:'Ishlab chiqarish',phone:'+998 90 333-44-55',hireDate:'2022-08-10',efficiency:92,status:'active'},
     {id:4,name:'Malika Yusupova',role:'employee',position:'Eksport menejeri',email:'malika@angor.uz',password:'malika123',avatar:'MY',avatarColor:'#ea580c',department:'Eksport',phone:'+998 90 444-55-66',hireDate:'2022-11-20',efficiency:81,status:'active'},
     {id:5,name:'Jasur Ergashev',role:'employee',position:'Omborchi',email:'jasur@angor.uz',password:'jasur123',avatar:'JE',avatarColor:'#16a34a',department:'Omborxona',phone:'+998 90 555-66-77',hireDate:'2023-01-05',efficiency:74,status:'active'},
-    {id:6,name:'Sirojiddin Faxriddinovich',role:'employee',position:'Bosh agronom',email:'sirojiddin1997tmi@gmail.com',password:'siroj_2821',avatar:'SF',avatarColor:'#C8922A',department:'Ishlab chiqarish',phone:'+998 90 123-45-67',hireDate:'2026-08-21',efficiency:95,status:'active'},
-    {id:7,name:'Sirojiddin Faxriddinovich',role:'employee',position:'Bosh agronom',email:'sirojiddin@angor.uz',password:'siroj_2821',avatar:'SF',avatarColor:'#C8922A',department:'Ishlab chiqarish',phone:'+998 90 123-45-67',hireDate:'2026-08-21',efficiency:95,status:'active'}
+    {id:6,name:'Sirojiddin Faxriddinovich',role:'employee',position:'Bosh agronom',email:'sirojiddin1997tmi@gmail.com',password:'siroj_2921',avatar:'SF',avatarColor:'#C8922A',department:'Ishlab chiqarish',phone:'+998 90 123-45-67',hireDate:'2026-08-21',efficiency:95,status:'active'},
+    {id:7,name:'Sirojiddin Faxriddinovich',role:'employee',position:'Bosh agronom',email:'sirojiddin@angor.uz',password:'siroj_2921',avatar:'SF',avatarColor:'#C8922A',department:'Ishlab chiqarish',phone:'+998 90 123-45-67',hireDate:'2026-08-21',efficiency:95,status:'active'}
   ];
   DB.set(DB.KEYS.USERS, employees);
 
