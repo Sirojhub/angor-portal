@@ -5,10 +5,26 @@ const path    = require('path');
 require('dotenv').config({ path: path.resolve(__dirname, '.env') });
 const express = require('express');
 const cors    = require('cors');
-const { seedDatabase } = require('./db/seed');
-
 const app  = express();
 const PORT = process.env.PORT || 3000;
+
+function loadModule(relPath) {
+  const candidates = [
+    `./server/${relPath}`,
+    `./${relPath}`,
+    `../server/${relPath}`
+  ];
+  for (const c of candidates) {
+    try {
+      return require(c);
+    } catch (e) {
+      if (e.code !== 'MODULE_NOT_FOUND') throw e;
+    }
+  }
+  return require(`./${relPath}`);
+}
+
+const { seedDatabase } = loadModule('db/seed');
 
 // Database seed
 seedDatabase();
