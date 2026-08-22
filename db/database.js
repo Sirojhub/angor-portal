@@ -345,8 +345,21 @@ class DatabaseEngine {
           const target = args[args.length - 1];
           const user = db.data.users.find(u => u.id === parseInt(target) || (typeof target === 'string' && (u.email || '').toLowerCase() === target.toLowerCase()));
           if (user) {
-            if (cleanSql.includes('password =')) {
-              user.password = args[0];
+            try {
+              const setPart = cleanSql.substring(cleanSql.search(/SET/i) + 3, cleanSql.search(/WHERE/i)).trim();
+              const assignments = setPart.split(',').map(s => s.trim().split('=')[0].trim());
+              assignments.forEach((colName, idx) => {
+                if (idx < args.length - 1 && colName) {
+                  const val = args[idx];
+                  user[colName] = val;
+                  if (colName === 'telegram_chat_id') user.chat_id = val;
+                  if (colName === 'chat_id') user.telegram_chat_id = val;
+                  if (colName === 'avatar_color') user.avatarColor = val;
+                  if (colName === 'hire_date') user.hireDate = val;
+                }
+              });
+            } catch (e) {
+              if (cleanSql.includes('password =')) user.password = args[0];
             }
             user.updated_at = new Date().toISOString();
             db.save();
