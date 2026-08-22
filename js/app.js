@@ -348,7 +348,13 @@ function renderTasks(){
         </tr>`;
       }).join('')
     : `<tr><td colspan="7"><div class="empty-state"><div class="icon">📋</div><h3>Topshiriqlar yo'q</h3></div></td></tr>`;
-document.getElementById('taskPaginBtns').innerHTML=btns;
+
+  let btns = '';
+  for (let p = 1; p <= pages; p++) {
+    btns += `<button class="btn btn-sm ${p === taskPage ? 'btn-primary' : 'btn-outline'}" onclick="setTaskPg(${p})">${p}</button> `;
+  }
+  const paginEl = document.getElementById('taskPaginBtns');
+  if (paginEl) paginEl.innerHTML = btns;
 }
 
 function setTaskPg(p){ if(p<1||p>Math.ceil(getFilteredTasks().length/TASKS_PER_PAGE)) return; taskPage=p; renderTasks(); }
