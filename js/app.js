@@ -1302,10 +1302,12 @@ function closeEmpDrawer(){
 
 function openNewEmployeeModal(){
   document.getElementById('empId').value='';
-  ['empName','empPosition','empEmail','empPhone','empPassword'].forEach(id=>document.getElementById(id).value='');
+  ['empName','empPosition','empEmail','empPhone','empPassword','empTelegramChatId'].forEach(id=>{
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
   document.getElementById('empDepartment').value='Ishlab chiqarish';
   document.getElementById('empRole').value='employee';
-  document.getElementById('empHireDate').value=new Date().toISOString().split('T')[0];
   document.getElementById('empModalTitle').textContent='Yangi xodim';
   openModal('employeeModal');
 }
@@ -1321,7 +1323,8 @@ function editEmployee(id){
   document.getElementById('empEmail').value=u.email;
   document.getElementById('empPhone').value=u.phone||'';
   document.getElementById('empPassword').value=u.password;
-  document.getElementById('empHireDate').value=u.hireDate||'';
+  const tgInp = document.getElementById('empTelegramChatId');
+  if (tgInp) tgInp.value = u.telegram_chat_id || u.chat_id || u.telegramChatId || '';
   document.getElementById('empModalTitle').textContent='Xodimni tahrirlash';
   closeEmpDrawer();
   openModal('employeeModal');
@@ -1332,6 +1335,7 @@ async function saveEmployee(){
   const name=document.getElementById('empName').value.trim();
   const email=document.getElementById('empEmail').value.trim();
   const password=document.getElementById('empPassword').value;
+  const telegramChatId = (document.getElementById('empTelegramChatId')?.value || '').trim();
   if(!name){ showToast('Ismni kiriting!','error'); return; }
   if(!email){ showToast('Email kiriting!','error'); return; }
   if(!id&&!password){ showToast('Parol kiriting!','error'); return; }
@@ -1347,7 +1351,8 @@ async function saveEmployee(){
     department:document.getElementById('empDepartment').value || 'Ishlab chiqarish',
     role:document.getElementById('empRole').value || 'employee',
     phone:document.getElementById('empPhone').value || '',
-    hireDate:document.getElementById('empHireDate').value || new Date().toISOString().split('T')[0],
+    telegram_chat_id: telegramChatId,
+    chat_id: telegramChatId,
     avatar:initials, avatarColor:color,
     efficiency:75, status:'active'
   };
