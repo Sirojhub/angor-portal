@@ -57,7 +57,17 @@ const DB = {
 // Boshlang'ich ma'lumotlar (birinchi yuklashda)
 // ============================================================
 function seedData(){
-  if(localStorage.getItem('ags_seeded')) return;
+  if(localStorage.getItem('ags_prod_clean_v20260822')) return;
+
+  // Clear all old demo storage keys from browser
+  localStorage.removeItem('ags_seeded');
+  localStorage.removeItem('ags_tasks');
+  localStorage.removeItem('ags_docs');
+  localStorage.removeItem('ags_clients');
+  localStorage.removeItem('ags_wh');
+  localStorage.removeItem('ags_users');
+  localStorage.removeItem('ags_notifs');
+  localStorage.removeItem('ags_logs');
 
   // --- Xodimlar ---
   const employees = [
@@ -87,8 +97,8 @@ function seedData(){
     language:'uz'
   });
 
-  localStorage.setItem('ags_seeded','1');
-  console.log('[AGS] Ma\'lumotlar muvaffaqiyatli yuklandi!');
+  localStorage.setItem('ags_prod_clean_v20260822','1');
+  console.log('[AGS] Ishlab chiqarish tizimi ma\'lumotlari muvaffaqiyatli tozalandi va tayyorlandi!');
 }
 
 // ============================================================
