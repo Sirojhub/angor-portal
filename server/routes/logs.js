@@ -8,7 +8,12 @@ const auth    = require('../middleware/auth');
 
 // GET /api/logs
 router.get('/', auth, (req, res) => {
-  const logs = db.prepare('SELECT * FROM activity_logs ORDER BY created_at DESC LIMIT 50').all();
+  let logs;
+  if (req.user.role === 'director') {
+    logs = db.prepare('SELECT * FROM activity_logs ORDER BY created_at DESC LIMIT 100').all();
+  } else {
+    logs = db.prepare('SELECT * FROM activity_logs WHERE user_id = ? ORDER BY created_at DESC LIMIT 100').all(req.user.id);
+  }
   res.json(logs);
 });
 
