@@ -852,16 +852,35 @@ function previewDoc(id){
   const catLabels={shartnoma:'Shartnoma',moliyaviy:'Moliyaviy hisobot',dala_jurnali:'Dala jurnali',buyruq:'Buyruq',sertifikat:'Sertifikat',laboratoriya:'Laboratoriya'};
   const isDirector = Auth.isDirector();
 
-  const filePath = d.file_path || d.filePath;
-  const isImage = (['JPG','PNG','JPEG','GIF','WEBP'].includes((d.fileType||'').toUpperCase())) ||
-                  (filePath && /\.(jpg|jpeg|png|gif|webp)$/i.test(filePath));
+  const filePath = d.file_path || d.filePath || '';
+  const fileExt = (filePath || d.title || '').split('.').pop().toUpperCase();
+  const docFileType = (d.file_type || d.fileType || fileExt || 'PDF').toUpperCase();
+  const isImage = ['JPG','PNG','JPEG','GIF','WEBP'].includes(docFileType) || ['JPG','PNG','JPEG','GIF','WEBP'].includes(fileExt) || (filePath && /\.(jpg|jpeg|png|gif|webp)$/i.test(filePath)) || (d.title && /\.(jpg|jpeg|png|gif|webp)$/i.test(d.title));
+
+  const serverFileUrl = `/api/documents/${d.id}/file`;
+  const serverDownloadUrl = `/api/documents/${d.id}/download`;
 
   let previewContent = '';
-  if (isImage && filePath) {
+  if (isImage) {
     previewContent = `
       <div style="background:#0f172a;padding:16px;border-radius:10px;text-align:center;margin-bottom:16px">
-        <img src="${filePath}" alt="${d.title}" style="max-width:100%;max-height:420px;object-fit:contain;border-radius:6px;box-shadow:0 4px 12px rgba(0,0,0,0.3)">
-        <div style="margin-top:8px;font-size:12px;color:#94a3b8">🖼️ Rasm ko'rinishi · <a href="${filePath}" target="_blank" style="color:#38bdf8;font-weight:600">To'liq o'lchamda ochish ↗</a></div>
+        <img src="${serverFileUrl}" alt="${d.title}" style="max-width:100%;max-height:420px;object-fit:contain;border-radius:6px;box-shadow:0 4px 12px rgba(0,0,0,0.3)" onerror="this.onerror=null;this.src='${filePath}'">
+        <div style="margin-top:8px;font-size:12px;color:#94a3b8">🖼️ Rasm ko'rinishi · <a href="${serverFileUrl}" target="_blank" style="color:#38bdf8;font-weight:600">To'liq o'lchamda ochish ↗</a></div>
+      </div>
+    `;
+  } else if (docFileType === 'PDF' || fileExt === 'PDF') {
+    previewContent = `
+      <div style="background:#f8fafc;border-radius:10px;overflow:hidden;margin-bottom:16px">
+        <iframe src="${serverFileUrl}" style="width:100%;height:400px;border:none;border-radius:8px"></iframe>
+      </div>
+    `;
+  } else {
+    previewContent = `
+      <div style="background:#f1f5f9;border:1px dashed var(--border);padding:24px;border-radius:10px;text-align:center;margin-bottom:16px">
+        <div style="font-size:40px;margin-bottom:8px">📁</div>
+        <div style="font-weight:700;font-size:14px;color:var(--text);margin-bottom:4px">«${d.title}»</div>
+        <div style="font-size:12px;color:var(--text-muted);margin-bottom:12px">Hujjat formati: ${docFileType} (${d.fileSize || d.file_size || '1.2 MB'})</div>
+        <a href="${serverDownloadUrl}" target="_blank" class="btn btn-sm btn-primary">↓ Faylni yuklab olish</a>
       </div>
     `;
   }
@@ -875,7 +894,7 @@ function previewDoc(id){
           <span style="font-size:36px">${isImage?'🖼️':'📄'}</span>
           <div>
             <h3 style="font-size:16px;font-weight:700;color:var(--text)">${d.title}</h3>
-            <p style="font-size:12px;color:var(--text-muted)">Hujjat ID: #${d.id} · Versiya: ${d.version}</p>
+            <p style="font-size:12px;color:var(--text-muted)">Hujjat ID: #${d.id} · Versiya: ${d.version||'v1'}</p>
           </div>
         </div>
         <div style="font-size:13px;line-height:1.6;color:var(--text);margin-bottom:16px">
@@ -895,12 +914,12 @@ function previewDoc(id){
         </div>
         <div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:14px;font-size:13px">
           <div style="color:var(--text-light);font-size:11px;font-weight:700;margin-bottom:4px">YUKLAGAN SHAXS</div>
-          <div style="font-weight:600">${d.uploadedName}</div>
-          <div style="color:var(--text-muted);font-size:11px">${fmtDate(d.uploadDate)}</div>
+          <div style="font-weight:600">${d.uploadedName || d.uploaded_name || '—'}</div>
+          <div style="color:var(--text-muted);font-size:11px">${fmtDate(d.uploadDate || d.upload_date)}</div>
         </div>
         <div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:14px;font-size:13px">
           <div style="color:var(--text-light);font-size:11px;font-weight:700;margin-bottom:4px">FAYL TURI V HAJMI</div>
-          <div style="font-weight:600">${d.fileType||'PDF'} (${d.fileSize||'1.2 MB'})</div>
+          <div style="font-weight:600">${docFileType} (${d.fileSize||d.file_size||'1.2 MB'})</div>
         </div>
       </div>
     </div>
@@ -908,12 +927,16 @@ function previewDoc(id){
 
   document.getElementById('docViewFooter').innerHTML = `
     <button class="btn btn-outline" onclick="closeModal('docViewModal')">Yopish</button>
-    <button class="btn btn-primary" onclick="downloadDoc(${d.id})">↓ Yuklab olish</button>
+    <a href="${serverDownloadUrl}" target="_blank" class="btn btn-primary">📂 Faylni Ochish / Yuklab olish</a>
     <button class="btn btn-success" onclick="closeModal('docViewModal');openUploadModal(${d.id})">📤 Javob fayli/rasmini yuborish</button>
     ${isDirector && d.status!=='active' ? `<button class="btn btn-success" onclick="approveDoc(${d.id})">✅ Tasdiqlash va Bazaga Saqlash</button>` : ''}
   `;
 
   openModal('docViewModal');
+}
+
+function downloadDoc(id){
+  window.open(`/api/documents/${id}/download`, '_blank');
 }
 
 function approveDoc(id){
