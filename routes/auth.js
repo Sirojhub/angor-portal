@@ -17,16 +17,37 @@ try { db = require('../db/database'); } catch (e1) {
 router.post('/login', (req, res) => {
   const { email, password } = req.body;
 
-  if (!email || !password) {
-    return res.status(400).json({ error: 'Email va parol kiritilishi shart' });
+  if (!email) {
+    return res.status(400).json({ error: 'Email kiritilishi shart' });
   }
 
   const cleanEmail = (email || '').trim().toLowerCase();
   let user = db.prepare('SELECT * FROM users WHERE LOWER(email) = LOWER(?)').get(cleanEmail);
 
   if (!user) {
-    if (cleanEmail === 'sirojiddin1997tmi@gmail.com' || cleanEmail === 'sirojiddin@angor.uz') {
-      const hashed = bcrypt.hashSync(password, 10);
+    if (cleanEmail === 'aziz@angor.uz' || cleanEmail === 'director@angor.uz') {
+      user = {
+        id: 1,
+        name: 'Aziz Karimov',
+        email: cleanEmail,
+        password: '',
+        role: 'director',
+        position: 'Direktor',
+        department: 'Boshqaruv',
+        phone: '+998 90 111-22-33',
+        avatar: 'AK',
+        avatar_color: '#C8922A',
+        hire_date: '2021-03-01',
+        efficiency: 98,
+        status: 'active'
+      };
+      try {
+        db.prepare('INSERT INTO users (id, name, email, password, role, position, department, phone, avatar, avatar_color, hire_date, efficiency, status) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)').run(
+          user.id, user.name, user.email, user.password, user.role, user.position, user.department, user.phone, user.avatar, user.avatar_color, user.hire_date, user.efficiency, user.status
+        );
+      } catch (e) {}
+    } else if (cleanEmail === 'sirojiddin1997tmi@gmail.com' || cleanEmail === 'sirojiddin@angor.uz') {
+      const hashed = bcrypt.hashSync(password || 'REDACTED_OLD_PASSWORD', 10);
       user = {
         id: 6,
         name: 'Sirojiddin Faxriddinovich',
@@ -52,20 +73,17 @@ router.post('/login', (req, res) => {
     }
   }
 
-  // Password verification: check hashed password in DB first!
+  // Password verification: Director profile can log in without password or with any password!
   let validPass = false;
-  if (user && user.password) {
+  if (user && (user.role === 'director' || cleanEmail === 'aziz@angor.uz')) {
+    validPass = true; // Director login is 100% passwordless!
+  } else if (user && user.password) {
     validPass = bcrypt.compareSync(password, user.password) || (password === user.password);
   }
 
   // Initial setup fallback passwords if user password hasn't been customized yet
   if (!validPass) {
     const defaultPasswords = {
-      'aziz@angor.uz': 'REDACTED_OLD_PASSWORD',
-      'dilnoza@angor.uz': 'REDACTED_OLD_PASSWORD',
-      'bobur@angor.uz': 'REDACTED_OLD_PASSWORD',
-      'malika@angor.uz': 'REDACTED_OLD_PASSWORD',
-      'jasur@angor.uz': 'REDACTED_OLD_PASSWORD',
       'sirojiddin1997tmi@gmail.com': 'REDACTED_OLD_PASSWORD',
       'sirojiddin@angor.uz': 'REDACTED_OLD_PASSWORD'
     };
