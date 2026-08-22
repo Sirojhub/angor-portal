@@ -354,11 +354,21 @@ function getUserColor(id){
   return u?`background:${u.avatarColor};`:'';
 }
 
+function populateTaskAssignedSelect(selectedId = null) {
+  const sel = document.getElementById('taskAssigned');
+  if (!sel) return;
+  const users = DB.get(DB.KEYS.USERS);
+  sel.innerHTML = '<option value="">— Mas\'ul xodimni tanlang —</option>' +
+    users.map(u => `<option value="${u.id}">${u.name} (${u.position || u.role})</option>`).join('');
+  if (selectedId) sel.value = selectedId;
+}
+
 function openNewTaskModal(){
   if (!Auth.isDirector()) {
     showToast('Faqat Direktor yangi topshiriq berishi mumkin!', 'error');
     return;
   }
+  populateTaskAssignedSelect();
   document.getElementById('taskId').value='';
   document.getElementById('taskTitle').value='';
   document.getElementById('taskDesc').value='';
@@ -373,13 +383,13 @@ function openNewTaskModal(){
 function editTask(id){
   const t=DB.getOne(DB.KEYS.TASKS,id);
   if(!t)return;
+  populateTaskAssignedSelect(t.assignedTo);
   document.getElementById('taskId').value=id;
   document.getElementById('taskTitle').value=t.title;
   document.getElementById('taskDesc').value=t.description||'';
   document.getElementById('taskDeadline').value=t.deadline;
   document.getElementById('taskPriority').value=t.priority;
   document.getElementById('taskCategory').value=t.category||'Ishlab chiqarish';
-  document.getElementById('taskAssigned').value=t.assignedTo;
   document.getElementById('taskStatus').value=t.status;
   document.getElementById('taskStatusGroup').style.display='block';
   document.getElementById('taskModalTitle').textContent='Topshiriqni tahrirlash';
