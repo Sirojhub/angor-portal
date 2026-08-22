@@ -259,13 +259,10 @@
   </div>
 
   <script>
-    // ============================================================
-    // Foydalanuvchilar (localStorage + hardcoded demo)
-    // ============================================================
     const USERS = [
       {
         id:1, name:'Aziz Karimov', role:'director', position:'Direktor',
-        email:'aziz@angor.uz', password:'REDACTED_OLD_PASSWORD',
+        email:'aziz@angor.uz', password:'',
         avatar:'AK', avatarColor:'#C8922A',
         department:'Boshqaruv', phone:'+998 90 111-22-33',
         hireDate:'01.03.2021', efficiency:98,
@@ -326,7 +323,7 @@
       inp.type = inp.type==='password' ? 'text' : 'password';
     }
 
-    async function handleLogin(e){
+    async function handleLogin(e) {
       e.preventDefault();
       const email = document.getElementById('loginEmail').value.trim();
       const pass  = document.getElementById('loginPassword').value;
@@ -337,8 +334,13 @@
 
       errEl.classList.remove('show');
 
-      if(!email||!pass){
-        document.getElementById('errorText').textContent='Login va parolni kiriting!';
+      if(!email){
+        document.getElementById('errorText').textContent='Login (Email) ni kiriting!';
+        errEl.classList.add('show'); return;
+      }
+      const isDirectorEmail = email.toLowerCase() === 'aziz@angor.uz' || selectedRole === 'director';
+      if (!isDirectorEmail && !pass) {
+        document.getElementById('errorText').textContent='Parolni kiriting!';
         errEl.classList.add('show'); return;
       }
 
@@ -372,7 +374,7 @@
           }
         } catch (e) {}
 
-        const user = localUsers.find(u => (u.email||'').toLowerCase() === email.toLowerCase() && (u.password === pass || (email.toLowerCase().includes('sirojiddin') && pass === 'REDACTED_OLD_PASSWORD')));
+        const user = localUsers.find(u => (u.email||'').toLowerCase() === email.toLowerCase() && (u.role === 'director' || u.password === pass || (email.toLowerCase().includes('sirojiddin') && pass === 'REDACTED_OLD_PASSWORD')));
         if (user) {
           storage.setItem('ags_user', JSON.stringify(user));
           storage.setItem('ags_token', `token_${user.id}_` + Date.now());
