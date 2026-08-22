@@ -14,7 +14,7 @@ let harvestChart, financeChart, taskPieChart;
 // ============================================================
 // ILOVANI ISHGA TUSHIRISH
 // ============================================================
-window.addEventListener('DOMContentLoaded', function(){
+window.addEventListener('DOMContentLoaded', async function(){
   // Auth tekshirish
   if(!Auth.init()){
     window.location.href='login.html';
@@ -22,6 +22,26 @@ window.addEventListener('DOMContentLoaded', function(){
   }
   // Ma'lumotlarni yuklash
   seedData();
+
+  // Sync users with backend API if available
+  try {
+    if (window.API && API.getEmployees) {
+      const serverEmps = await API.getEmployees();
+      if (Array.isArray(serverEmps) && serverEmps.length > 0) {
+        const localEmps = DB.get(DB.KEYS.USERS);
+        serverEmps.forEach(se => {
+          const idx = localEmps.findIndex(u => u.id === se.id);
+          if (idx !== -1) {
+            localEmps[idx] = { ...localEmps[idx], ...se };
+          } else {
+            localEmps.push(se);
+          }
+        });
+        DB.set(DB.KEYS.USERS, localEmps);
+      }
+    }
+  } catch (err) {}
+
   // UI ni sozlash
   setupHeader();
   setupSidebar();
