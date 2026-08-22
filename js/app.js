@@ -1429,7 +1429,7 @@ function openEmpDrawer(id){
   const tasks=DB.get(DB.KEYS.TASKS).filter(t=>t.assignedTo===id);
   const active=tasks.filter(t=>t.status!=='done').length;
   const done=tasks.filter(t=>t.status==='done').length;
-  const roleLabels={director:'👑 Direktor',manager:'📋 Menejer',employee:'👤 Xodim'};
+  const roleLabels={director:'🏛️ Direktor',manager:'📋 Menejer',employee:'👤 Xodim'};
 
   document.getElementById('empDrawerTitle').textContent=u.name;
   document.getElementById('empDrawerBody').innerHTML=`
@@ -1666,7 +1666,7 @@ function renderProfile(){
   const tasks=DB.get(DB.KEYS.TASKS).filter(t=>t.assignedTo===u.id);
   const done=tasks.filter(t=>t.status==='done').length;
   const active=tasks.filter(t=>t.status!=='done').length;
-  const roleLabels={director:'👑 Direktor',manager:'📋 Menejer',employee:'👤 Xodim'};
+  const roleLabels={director:'🏛️ Direktor',manager:'📋 Menejer',employee:'👤 Xodim'};
 
   document.getElementById('profileContent').innerHTML=`
     <div class="profile-header">
