@@ -1585,6 +1585,9 @@ async function changePassword(){
     if (Auth.currentUser) {
       Auth.currentUser.password = nw;
       localStorage.setItem('ags_user', JSON.stringify(Auth.currentUser));
+      try {
+        DB.update(DB.KEYS.USERS, Auth.currentUser.id, { password: nw });
+      } catch (e) {}
     }
     showToast('🔑 Parolingiz muvaffaqiyatli o\'zgartirildi!', 'success');
     ['curPass','newPass','confPass'].forEach(id => {
