@@ -390,10 +390,6 @@ function populateTaskAssignedSelect(selectedId = null) {
 }
 
 function openNewTaskModal(){
-  if (!Auth.isDirector()) {
-    showToast('Faqat Direktor yangi topshiriq berishi mumkin!', 'error');
-    return;
-  }
   populateTaskAssignedSelect();
   document.getElementById('taskId').value='';
   document.getElementById('taskTitle').value='';
@@ -403,6 +399,8 @@ function openNewTaskModal(){
   document.getElementById('taskCategory').value='Ishlab chiqarish';
   document.getElementById('taskModalTitle').textContent='Yangi topshiriq';
   document.getElementById('taskStatusGroup').style.display='none';
+  const fEl = document.getElementById('taskModalFile');
+  if (fEl) fEl.value = '';
   openModal('taskModal');
 }
 
@@ -419,6 +417,8 @@ function editTask(id){
   document.getElementById('taskStatus').value=t.status;
   document.getElementById('taskStatusGroup').style.display='block';
   document.getElementById('taskModalTitle').textContent='Topshiriqni tahrirlash';
+  const fEl = document.getElementById('taskModalFile');
+  if (fEl) fEl.value = '';
   openModal('taskModal');
 }
 
@@ -450,24 +450,49 @@ async function saveTask(){
     createdBy: Auth.currentUser.id
   };
 
+  const fileInput = document.getElementById('taskModalFile');
+  const file = fileInput?.files[0];
+
   showToast('Topshiriq saqlanmoqda va Telegramga yuborilmoqda...', 'info');
+
+  let taskId = id ? +id : null;
 
   if(id){
     await API.updateTask(+id, obj);
     DB.update(DB.KEYS.TASKS,+id,obj);
     logActivity('update','task',+id,'Topshiriq yangilandi: '+title);
-    showToast('Topshiriq yangilandi!','success');
   } else {
     const res = await API.createTask(obj);
     const created = (res && res.task) ? res.task : DB.create(DB.KEYS.TASKS,obj);
     if (!DB.getOne(DB.KEYS.TASKS, created.id)) {
       DB.create(DB.KEYS.TASKS, created);
     }
+    taskId = created.id;
     logActivity('create','task',created.id,'Yangi topshiriq yaratildi: '+title);
-    showToast('✅ Yangi topshiriq yaratildi va Telegram xabari yuborildi! 📲','success');
   }
+
+  if (file && taskId) {
+    const formData = new FormData();
+    formData.append('title', `${title} (Topshiriq hujjati)`);
+    formData.append('category', obj.category || 'Ishlab chiqarish');
+    formData.append('task_id', taskId);
+    formData.append('target_user_id', uid);
+    formData.append('target_user_name', user?.name || '');
+    formData.append('description', `«${title}» topshirig'i bilan birga yuklangan hujjat`);
+    formData.append('file', file);
+
+    try {
+      const docRes = await API.uploadDocument(formData);
+      if (docRes && docRes.document) {
+        DB.create(DB.KEYS.DOCS, docRes.document);
+      }
+    } catch (e) {}
+  }
+
+  if (fileInput) fileInput.value = '';
+  showToast('✅ Topshiriq va biriktirilgan hujjat saqlandi va Telegramga yuborildi! 📲','success');
   closeModal('taskModal');
-  renderTasks(); buildTaskTabs(); renderDashboard();
+  renderTasks(); buildTaskTabs(); renderDashboard(); renderDocs();
 }
 
 function viewTask(id){
@@ -1834,21 +1859,32 @@ function resetAllData(){
 // ============================================================
 // FAOLIYAT LOGI
 // ============================================================
-function renderLogs(){
-  const logs=DB.get(DB.KEYS.LOGS).reverse();
+async function renderLogs(){
+  const u = Auth.currentUser;
+  let logs = [];
+  try {
+    logs = await API.request('logs');
+  } catch (e) {
+    logs = DB.get(DB.KEYS.LOGS);
+  }
+  if (!Auth.isDirector()) {
+    logs = logs.filter(l => l.user_id == u.id || l.userId == u.id);
+  }
+  logs = (logs || []).slice().reverse();
+
   const actionLabels={complete:'Yakunladi',upload:'Yukladi',approve:'Tasdiqladi',create:'Yaratdi',update:'Yangiladi',note:'Izoh qo\'shdi',comment:'Izoh qoldirdi'};
   const actionIcons={complete:'✅',upload:'📄',approve:'✔️',create:'➕',update:'✏️',note:'📝',comment:'💬'};
   document.getElementById('logsBody').innerHTML=logs.map(l=>`<tr>
     <td>
       <div style="display:flex;align-items:center;gap:8px">
-        <div class="avatar av-blue" style="width:28px;height:28px;font-size:11px">${getInitials(l.userName)}</div>
-        ${l.userName}
+        <div class="avatar av-blue" style="width:28px;height:28px;font-size:11px">${getInitials(l.user_name || l.userName || 'Xodim')}</div>
+        ${l.user_name || l.userName || 'Xodim'}
       </div>
     </td>
     <td>${actionIcons[l.action]||'📌'} ${actionLabels[l.action]||l.action}</td>
     <td style="font-size:13px">${l.description}</td>
-    <td style="color:var(--text-muted);white-space:nowrap">${l.time}</td>
-  </tr>`).join('')||'<tr><td colspan="4"><div class="empty-state"><div class="icon">📜</div><h3>Log bo\'sh</h3></div></td></tr>';
+    <td style="color:var(--text-muted);white-space:nowrap">${fmtDate(l.created_at || l.time)}</td>
+  </tr>`).join('')||'<tr><td colspan="4"><div class="empty-state"><div class="icon">📜</div><h3>Shaxsiy log bo\'sh</h3></div></td></tr>';
 }
 
 // ============================================================
