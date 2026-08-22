@@ -24,9 +24,9 @@ const DB = {
   // --- CRUD yordamchilari ---
   get(key)        { try{ return JSON.parse(localStorage.getItem(key)||'[]'); }catch(e){ return []; } },
   set(key,data)   { localStorage.setItem(key, JSON.stringify(data)); },
-  getOne(key,id)  { return this.get(key).find(x=>x.id===parseInt(id)||x.id===id)||null; },
+  getOne(key,id)  { return this.get(key).find(x=>x.id==id || x.id===parseInt(id))||null; },
   getById(key,id) { return this.getOne(key,id); },
-  nextId(key)     { const d=this.get(key); return d.length? Math.max(...d.map(x=>x.id))+1 : 1; },
+  nextId(key)     { const d=this.get(key); return d.length? Math.max(...d.map(x=>parseInt(x.id)||0))+1 : 1; },
 
   create(key,obj) {
     const data = this.get(key);
@@ -39,14 +39,16 @@ const DB = {
   },
   update(key,id,changes){
     const data = this.get(key);
-    const idx  = data.findIndex(x=>x.id===id);
+    const targetId = parseInt(id);
+    const idx  = data.findIndex(x=>x.id==id || x.id===targetId);
     if(idx===-1)return null;
     data[idx] = {...data[idx],...changes, updated_at:new Date().toISOString()};
     this.set(key,data);
     return data[idx];
   },
   delete(key,id){
-    const data = this.get(key).filter(x=>x.id!==id);
+    const targetId = parseInt(id);
+    const data = this.get(key).filter(x=>x.id!=id && x.id!==targetId);
     this.set(key,data);
   },
   filter(key,fn){ return this.get(key).filter(fn); },
