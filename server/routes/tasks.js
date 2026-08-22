@@ -93,6 +93,8 @@ router.put('/:id', auth, async (req, res) => {
 
   db.prepare(`UPDATE tasks SET ${updates.join(', ')} WHERE id = ?`).run(...values);
 
+  const updated = db.prepare('SELECT * FROM tasks WHERE id = ?').get(id);
+
   // Log & Telegram notification
   if (req.body.status && req.body.status !== task.status) {
     const statusMap = { new:'Yangi', progress:'Jarayonda', review:'Tasdiqlashda', done:'Bajarildi', rejected:'Rad etildi' };
@@ -101,13 +103,12 @@ router.put('/:id', auth, async (req, res) => {
     );
 
     try {
-      await TelegramService.notifyTaskStatusUpdate(task, task.status, req.body.status);
+      await TelegramService.notifyTaskStatusUpdate(updated || task, task.status, req.body.status);
     } catch (e) {
       console.warn('[Telegram] Status yuborishda xato:', e.message);
     }
   }
 
-  const updated = db.prepare('SELECT * FROM tasks WHERE id = ?').get(id);
   res.json({ success: true, task: updated });
 });
 
