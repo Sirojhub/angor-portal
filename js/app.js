@@ -1879,11 +1879,29 @@ var activePreviewDocId = null;
 
 function previewDoc(id) {
   var doc = DB.getOne(DB.KEYS.DOCS, id);
+  if (!doc && window.appDocs) doc = appDocs.find(d => d.id == id);
   if (!doc) return;
   activePreviewDocId = id;
 
   const catLabels = {shartnoma:'Shartnoma',moliyaviy:'Moliyaviy hisobot',dala_jurnali:'Dala jurnali',buyruq:'Buyruq',sertifikat:'Sertifikat',laboratoriya:'Laboratoriya'};
   const isDirector = Auth.isDirector();
+  const filePath = doc.file_path || doc.filePath;
+  const fileType = (doc.file_type || doc.fileType || 'PDF').toUpperCase();
+  const isImage = ['JPG', 'JPEG', 'PNG', 'WEBP', 'GIF'].includes(fileType);
+  const isPdf = fileType === 'PDF';
+
+  let previewMediaHtml = '';
+  if (filePath) {
+    if (isImage) {
+      previewMediaHtml = `<div style="margin-top:16px"><img src="${filePath}" style="max-width:100%;max-height:350px;border-radius:8px;border:1px solid var(--border);object-fit:contain" alt="Hujjat rasmi"></div>`;
+    } else if (isPdf) {
+      previewMediaHtml = `<div style="margin-top:16px"><iframe src="${filePath}" style="width:100%;height:320px;border:1px solid var(--border);border-radius:8px"></iframe></div>`;
+    } else {
+      previewMediaHtml = `<div style="margin-top:16px;padding:12px;background:#e2e8f0;border-radius:8px;text-align:center">
+        <a href="${filePath}" target="_blank" class="btn btn-sm btn-primary">📂 Faylni yangi oynada ochish (${fileType})</a>
+      </div>`;
+    }
+  }
 
   document.getElementById('docViewTitle').textContent = `📄 ${doc.title}`;
   document.getElementById('docViewBody').innerHTML = `
@@ -1899,7 +1917,8 @@ function previewDoc(id) {
         <div style="font-size:13px;line-height:1.6;color:var(--text);margin-bottom:16px">
           <strong>Tavsif:</strong> ${doc.description || 'Qo\'shimcha izoh qoldirilmagan.'}
         </div>
-        <div style="background:#fff;border-radius:8px;padding:12px;border:1px solid var(--border);font-size:12px">
+        ${previewMediaHtml}
+        <div style="background:#fff;border-radius:8px;padding:12px;border:1px solid var(--border);font-size:12px;margin-top:16px">
           <div style="font-weight:600;margin-bottom:4px">🏢 «Angor Agro Star MCHJ» Tasdiqlash Muhr Jurnali</div>
           <div style="color:var(--text-muted)">Holat: ${doc.status === 'active' || doc.status === 'approved' ? '<span style="color:var(--success);font-weight:700">✅ TASDIQLANGAN VA BAZAGA SAQLANGAN</span>' : '<span style="color:var(--warning);font-weight:700">⏳ DIREKTOR TASDIG\'I KUTILMOQDA</span>'}</div>
         </div>
@@ -1912,12 +1931,12 @@ function previewDoc(id) {
         </div>
         <div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:14px;font-size:13px">
           <div style="color:var(--text-light);font-size:11px;font-weight:700;margin-bottom:4px">YUKLAGAN SHAXS</div>
-          <div style="font-weight:600">${doc.uploadedName || 'Foydalanuvchi'}</div>
-          <div style="color:var(--text-muted);font-size:11px">${fmtDate(doc.uploadDate)}</div>
+          <div style="font-weight:600">${doc.uploadedName || doc.uploaded_name || 'Foydalanuvchi'}</div>
+          <div style="color:var(--text-muted);font-size:11px">${fmtDate(doc.uploadDate || doc.upload_date)}</div>
         </div>
         <div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:14px;font-size:13px">
           <div style="color:var(--text-light);font-size:11px;font-weight:700;margin-bottom:4px">FAYL TURI V HAJMI</div>
-          <div style="font-weight:600">${doc.fileType || 'PDF'} (${doc.fileSize || '1.2 MB'})</div>
+          <div style="font-weight:600">${fileType} (${doc.fileSize || doc.file_size || 'Fayl biriktirilgan'})</div>
         </div>
       </div>
     </div>
@@ -1925,20 +1944,55 @@ function previewDoc(id) {
 
   document.getElementById('docViewFooter').innerHTML = `
     <button class="btn btn-outline" onclick="closeModal('docViewModal')">Yopish</button>
-    <button class="btn btn-primary" onclick="downloadDoc(${doc.id})">↓ Yuklab olish</button>
+    <button class="btn btn-primary" onclick="downloadDoc(${doc.id})">📂 Faylni Ochish / Yuklab olish</button>
     ${isDirector && doc.status !== 'active' && doc.status !== 'approved' ? `<button class="btn btn-success" onclick="approveCurrentDoc('approved')">✅ Tasdiqlash va Bazaga Saqlash</button>` : ''}
   `;
 
   openModal('docViewModal');
 }
 
+function downloadDoc(id) {
+  var doc = DB.getOne(DB.KEYS.DOCS, id);
+  if (!doc && window.appDocs) doc = appDocs.find(d => d.id == id);
+  if (!doc) {
+    showToast('Hujjat topilmadi', 'error');
+    return;
+  }
+
+  const filePath = doc.file_path || doc.filePath;
+  if (filePath) {
+    const link = document.createElement('a');
+    link.href = filePath;
+    link.target = '_blank';
+    link.download = doc.title || 'hujjat';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast('Hujjat fayli ochilmoqda / yuklab olinmoqda...', 'success');
+  } else if (doc.fileData) {
+    const link = document.createElement('a');
+    link.href = doc.fileData;
+    link.download = (doc.title || 'hujjat') + '.' + (doc.fileType || 'pdf').toLowerCase();
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast('Hujjat yuklab olindi', 'success');
+  } else {
+    showToast('Hujjat uchun biriktirilgan fayl mavjud emas', 'warning');
+  }
+}
+
 function approveCurrentDoc(status) {
   if (!activePreviewDocId) return;
   var doc = DB.getOne(DB.KEYS.DOCS, activePreviewDocId);
+  if (!doc && window.appDocs) doc = appDocs.find(d => d.id == activePreviewDocId);
   if (!doc) return;
 
   var newStatus = status === 'approved' ? 'active' : 'rejected';
   DB.update(DB.KEYS.DOCS, activePreviewDocId, { status: newStatus });
+  if (window.API && API.request) {
+    API.request(`/documents/${activePreviewDocId}`, 'PUT', { status: newStatus }).catch(()=>{});
+  }
 
   logActivity('approve', 'document', activePreviewDocId, `«${doc.title}» hujjatini tasdiqladi va bazaga saqladi`);
   showToast(status === 'approved' ? 'Hujjat muvaffaqiyatli tasdiqlandi va bazaga saqlandi!' : 'Hujjat rad etildi!', status === 'approved' ? 'success' : 'warning');
