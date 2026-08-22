@@ -45,14 +45,20 @@
       position:relative;z-index:1;
     }
     /* Logo */
-    .login-logo{text-align:center;margin-bottom:32px}
-    .logo-icon{
-      width:72px;height:72px;border-radius:18px;
-      background:var(--accent);
+    .login-logo{text-align:center;margin-bottom:24px}
+    .logo-img-wrap{
+      width:96px;height:96px;border-radius:20px;
+      background:#ffffff;
+      padding:8px;
       display:inline-flex;align-items:center;justify-content:center;
-      font-size:32px;font-weight:800;color:var(--primary-dark);
-      box-shadow:0 8px 32px rgba(200,146,42,.4);
+      box-shadow:0 12px 36px rgba(0,0,0,.35);
       margin-bottom:16px;
+      transition:transform .3s ease;
+    }
+    .logo-img-wrap:hover{transform:scale(1.04)}
+    .official-logo-img{
+      max-width:100%;max-height:100%;
+      object-fit:contain;
     }
     .login-logo h1{color:#fff;font-size:22px;font-weight:800;letter-spacing:.5px}
     .login-logo p{color:rgba(255,255,255,.6);font-size:13px;margin-top:4px}
@@ -184,7 +190,9 @@
   <div class="login-wrap">
     <!-- Logo -->
     <div class="login-logo">
-      <div class="logo-icon">A</div>
+      <div class="logo-img-wrap">
+        <img src="img/logo.png" alt="Angor Agro Star Logo" class="official-logo-img">
+      </div>
       <h1>ANGOR AGRO STAR</h1>
       <p>O'ZBEKISTON RESPUBLIKASI · SURXONDARYO VILOYATI · ANGOR TUMANI</p>
     </div>
