@@ -857,21 +857,28 @@ function previewDoc(id){
   const docFileType = (d.file_type || d.fileType || fileExt || 'PDF').toUpperCase();
   const isImage = ['JPG','PNG','JPEG','GIF','WEBP'].includes(docFileType) || ['JPG','PNG','JPEG','GIF','WEBP'].includes(fileExt) || (filePath && /\.(jpg|jpeg|png|gif|webp)$/i.test(filePath)) || (d.title && /\.(jpg|jpeg|png|gif|webp)$/i.test(d.title));
 
-  const serverFileUrl = `/api/documents/${d.id}/file`;
-  const serverDownloadUrl = `/api/documents/${d.id}/download`;
+  let fileSrc = `/api/documents/${d.id}/file`;
+  if (filePath && (filePath.startsWith('data:') || filePath.startsWith('blob:') || filePath.startsWith('http'))) {
+    fileSrc = filePath;
+  }
+
+  const serverDownloadUrl = (filePath && (filePath.startsWith('data:') || filePath.startsWith('blob:'))) ? filePath : `/api/documents/${d.id}/download`;
 
   let previewContent = '';
   if (isImage) {
     previewContent = `
       <div style="background:#0f172a;padding:16px;border-radius:10px;text-align:center;margin-bottom:16px">
-        <img src="${serverFileUrl}" alt="${d.title}" style="max-width:100%;max-height:420px;object-fit:contain;border-radius:6px;box-shadow:0 4px 12px rgba(0,0,0,0.3)" onerror="this.onerror=null;this.src='${filePath}'">
-        <div style="margin-top:8px;font-size:12px;color:#94a3b8">🖼️ Rasm ko'rinishi · <a href="${serverFileUrl}" target="_blank" style="color:#38bdf8;font-weight:600">To'liq o'lchamda ochish ↗</a></div>
+        <img src="${fileSrc}" alt="${d.title}" style="max-width:100%;max-height:420px;object-fit:contain;border-radius:6px;box-shadow:0 4px 12px rgba(0,0,0,0.3)" onerror="if(this.src!=='${filePath}'){this.src='${filePath}';}">
+        <div style="margin-top:8px;font-size:12px;color:#94a3b8">🖼️ Rasm ko'rinishi · <a href="${fileSrc}" target="_blank" style="color:#38bdf8;font-weight:600">To'liq o'lchamda ochish ↗</a></div>
       </div>
     `;
   } else if (docFileType === 'PDF' || fileExt === 'PDF') {
     previewContent = `
       <div style="background:#f8fafc;border-radius:10px;overflow:hidden;margin-bottom:16px">
-        <iframe src="${serverFileUrl}" style="width:100%;height:400px;border:none;border-radius:8px"></iframe>
+        <iframe src="${fileSrc}" style="width:100%;height:400px;border:none;border-radius:8px"></iframe>
+        <div style="text-align:center;padding:8px;background:#f1f5f9;font-size:12px">
+          📄 PDF ko'rinishi · <a href="${fileSrc}" target="_blank" style="color:var(--primary);font-weight:600">Yangi oynada ochish ↗</a>
+        </div>
       </div>
     `;
   } else {
@@ -880,7 +887,7 @@ function previewDoc(id){
         <div style="font-size:40px;margin-bottom:8px">📁</div>
         <div style="font-weight:700;font-size:14px;color:var(--text);margin-bottom:4px">«${d.title}»</div>
         <div style="font-size:12px;color:var(--text-muted);margin-bottom:12px">Hujjat formati: ${docFileType} (${d.fileSize || d.file_size || '1.2 MB'})</div>
-        <a href="${serverDownloadUrl}" target="_blank" class="btn btn-sm btn-primary">↓ Faylni yuklab olish</a>
+        <a href="${serverDownloadUrl}" target="_blank" download="${d.title}" class="btn btn-sm btn-primary">↓ Faylni yuklab olish</a>
       </div>
     `;
   }
@@ -927,7 +934,7 @@ function previewDoc(id){
 
   document.getElementById('docViewFooter').innerHTML = `
     <button class="btn btn-outline" onclick="closeModal('docViewModal')">Yopish</button>
-    <a href="${serverDownloadUrl}" target="_blank" class="btn btn-primary">📂 Faylni Ochish / Yuklab olish</a>
+    <a href="${serverDownloadUrl}" target="_blank" download="${d.title}" class="btn btn-primary">📂 Faylni Ochish / Yuklab olish</a>
     <button class="btn btn-success" onclick="closeModal('docViewModal');openUploadModal(${d.id})">📤 Javob fayli/rasmini yuborish</button>
     ${isDirector && d.status!=='active' ? `<button class="btn btn-success" onclick="approveDoc(${d.id})">✅ Tasdiqlash va Bazaga Saqlash</button>` : ''}
   `;
@@ -935,9 +942,6 @@ function previewDoc(id){
   openModal('docViewModal');
 }
 
-function downloadDoc(id){
-  window.open(`/api/documents/${id}/download`, '_blank');
-}
 
 function approveDoc(id){
   const d=DB.getOne(DB.KEYS.DOCS,id);
