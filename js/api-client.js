@@ -14,6 +14,14 @@ const API = {
       if (token) {
         headers['Authorization'] = `Bearer ${token}`;
       }
+      const uData = localStorage.getItem('ags_user') || sessionStorage.getItem('ags_user');
+      if (uData) {
+        try {
+          const uObj = JSON.parse(uData);
+          if (uObj.email) headers['X-User-Email'] = uObj.email;
+          if (uObj.id) headers['X-User-Id'] = String(uObj.id);
+        } catch (e) {}
+      }
 
       const options = { method, headers };
       if (data && method !== 'GET') {
