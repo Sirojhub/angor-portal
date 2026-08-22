@@ -2,7 +2,7 @@
    ANGOR AGRO STAR PORTAL — Asosiy dizayn tizimi
    ============================================================ */
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700;800&display=swap');
 
 /* --- CSS O'zgaruvchilar --- */
 :root {
@@ -43,11 +43,13 @@
 *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
 html { font-size:14px; scroll-behavior:smooth; }
 body {
-  font-family:'Inter', -apple-system, sans-serif;
+  font-family:'Plus Jakarta Sans', 'Inter', -apple-system, sans-serif;
   background: var(--bg);
   color: var(--text);
   line-height:1.5;
   min-height:100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 a { text-decoration:none; color:inherit; }
 img { max-width:100%; }
