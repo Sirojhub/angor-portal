@@ -1544,7 +1544,9 @@ async function changePassword(){
   const nw  = document.getElementById('newPass').value.trim();
   const conf= document.getElementById('confPass').value.trim();
 
-  if(!cur || !nw){ showToast('Barcha maydonlarni to\'ldiring!','error'); return; }
+  const isDirector = Auth.currentUser && Auth.currentUser.role === 'director';
+  if(!nw){ showToast('Yangi parolni kiriting!','error'); return; }
+  if(!isDirector && !cur){ showToast('Joriy parolni kiriting!','error'); return; }
   if(nw.length < 6){ showToast('Yangi parol kamida 6 ta belgi bo\'lishi kerak!','error'); return; }
   if(nw !== conf){ showToast('Yangi parollar bir-biriga mos kelmadi!','error'); return; }
 
