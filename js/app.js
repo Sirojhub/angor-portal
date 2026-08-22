@@ -492,6 +492,27 @@ function viewTask(id){
         ${t.description?`<div class="info-section-title">Tavsif</div><p style="font-size:13px;color:var(--text);line-height:1.6">${t.description}</p>`:''}
       </div>
     </div>
+
+    <!-- RAHBAR VA XODIMLAR O'RTASIDAGI HUJJATLAR AYLANMASI DARCHASI -->
+    <div style="margin-top:20px;border-top:1px solid var(--border);padding-top:16px">
+      <div style="font-weight:700;font-size:14px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between">
+        <span>📂 Rahbar va xodimlar o'rtasidagi hujjatlar aylanmasi</span>
+        <span style="font-size:11px;color:var(--text-muted)">Ixtiyoriy hujjat biriktirish</span>
+      </div>
+
+      <!-- Biriktirilgan hujjatlar ro'yxati -->
+      <div id="taskDocsList_${t.id}" style="margin-bottom:16px"></div>
+
+      <!-- Yangi hujjat biriktirish -->
+      <div style="background:var(--bg);border:1px dashed var(--border);border-radius:10px;padding:14px">
+        <div style="font-size:12px;font-weight:600;margin-bottom:8px">📤 Ushbu topshiriqqa yangi hujjat biriktirish</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+          <input type="text" class="form-control form-control-sm" id="taskDocTitle_${t.id}" placeholder="Hujjat nomi (masalan: Bajarilgan ish hisoboti)">
+          <input type="file" class="form-control form-control-sm" id="taskDocFile_${t.id}">
+        </div>
+        <button class="btn btn-sm btn-primary" onclick="uploadTaskDocument(${t.id})">📤 Hujjatni biriktirish va yuborish</button>
+      </div>
+    </div>
   `;
   const isDir=Auth.isDirector()||Auth.isManager();
   let actionBtn = '';
@@ -514,7 +535,75 @@ function viewTask(id){
     ${isDir?`<button class="btn btn-outline" onclick="closeModal('taskViewModal');editTask(${t.id})">✏️ Tahrirlash</button>`:''}
     ${actionBtn}
   `;
+  renderTaskDocs(t.id);
   openModal('taskViewModal');
+}
+
+function renderTaskDocs(taskId) {
+  const container = document.getElementById(`taskDocsList_${taskId}`);
+  if (!container) return;
+  const allDocs = DB.get(DB.KEYS.DOCS);
+  const docs = allDocs.filter(d => d.task_id == taskId || d.taskId == taskId);
+
+  if (!docs.length) {
+    container.innerHTML = `<div style="font-size:12px;color:var(--text-muted);font-style:italic">Hozircha ushbu topshiriqqa biriktirilgan hujjatlar yo'q.</div>`;
+    return;
+  }
+
+  container.innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:8px">
+      ${docs.map(d => `
+        <div style="display:flex;align-items:center;justify-content:space-between;background:var(--card-bg);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:13px">
+          <div>
+            <div style="font-weight:600;color:var(--text)">📄 ${d.title}</div>
+            <div style="font-size:11px;color:var(--text-muted)">Kim yukladi: ${d.uploaded_name || d.uploadedName || '—'} · ${d.file_type || d.fileType || 'FAYL'} (${d.file_size || d.fileSize || ''}) · ${fmtDate(d.upload_date || d.created_at)}</div>
+          </div>
+          <div style="display:flex;gap:6px">
+            <button class="btn btn-sm btn-outline" onclick="previewDoc(${d.id})">👁️ Ko'rish</button>
+            <button class="btn btn-sm btn-primary" onclick="downloadDoc(${d.id})">↓ Yuklab olish</button>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+async function uploadTaskDocument(taskId) {
+  const task = DB.getOne(DB.KEYS.TASKS, taskId);
+  if (!task) return;
+  const titleInput = document.getElementById(`taskDocTitle_${taskId}`);
+  const fileInput = document.getElementById(`taskDocFile_${taskId}`);
+
+  const title = titleInput?.value.trim();
+  const file = fileInput?.files[0];
+
+  if (!title) {
+    showToast('Iltimos, hujjat nomini kiriting!', 'error');
+    return;
+  }
+
+  showToast('Hujjat topshiriqqa biriktirilmoqda...', 'info');
+
+  const formData = new FormData();
+  formData.append('title', title);
+  formData.append('category', task.category || 'Ishlab chiqarish');
+  formData.append('task_id', taskId);
+  formData.append('description', `«${task.title}» topshirig'i bo'yicha biriktirilgan hujjat`);
+  if (file) formData.append('file', file);
+
+  try {
+    const res = await API.uploadDocument(formData);
+    if (res && res.document) {
+      DB.create(DB.KEYS.DOCS, res.document);
+    }
+    showToast('✅ Hujjat topshiriqqa muvaffaqiyatli biriktirildi va Telegramga yuborildi!', 'success');
+    if (titleInput) titleInput.value = '';
+    if (fileInput) fileInput.value = '';
+    renderTaskDocs(taskId);
+    renderDocs();
+  } catch (e) {
+    showToast('Hujjat yuklashda xatolik yuz berdi', 'error');
+  }
 }
 
 function nextStatus(s){ return {new:'progress',progress:'review',review:'done',done:'done'}[s]; }
