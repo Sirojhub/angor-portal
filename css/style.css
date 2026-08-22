@@ -319,37 +319,119 @@ ul, ol { list-style:none; }
 .kpi-trend.down { color:var(--danger); }
 
 /* ============================================================
-   BUTTONS
+   BUTTONS — Glassmorphism & 3D Shimmer Design System
    ============================================================ */
 .btn {
-  display:inline-flex;
-  align-items:center;
-  gap:6px;
-  padding:8px 16px;
-  border-radius:8px;
-  font-size:13px;
-  font-weight:600;
-  transition:all var(--transition);
-  white-space:nowrap;
-  cursor:pointer;
-  border:none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 9px 18px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  font-family: inherit;
+  transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+  white-space: nowrap;
+  cursor: pointer;
+  border: none;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.1);
 }
-.btn-primary { background:var(--primary); color:#fff; }
-.btn-primary:hover { background:var(--primary-light); }
-.btn-accent  { background:var(--accent); color:var(--primary-dark); }
-.btn-accent:hover  { background:var(--accent-dark); color:#fff; }
-.btn-success { background:var(--success); color:#fff; }
-.btn-danger  { background:var(--danger);  color:#fff; }
-.btn-warning { background:var(--warning); color:#fff; }
+.btn::after {
+  content: '';
+  position: absolute;
+  top: 0; left: -100%; width: 50%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent);
+  transform: rotate(20deg);
+  transition: opacity 0.3s;
+  pointer-events: none;
+}
+.btn:hover::after {
+  animation: btnShimmer 1.5s infinite;
+}
+@keyframes btnShimmer {
+  0% { left: -100%; }
+  100% { left: 200%; }
+}
+.btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(0,0,0,0.18);
+}
+.btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #1A3A6B 0%, #2a5298 100%);
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(26, 58, 107, 0.35), inset 0 1px 0 rgba(255,255,255,0.2);
+}
+.btn-primary:hover {
+  background: linear-gradient(135deg, #122A52 0%, #1A3A6B 100%);
+  box-shadow: 0 8px 22px rgba(26, 58, 107, 0.48);
+}
+
+.btn-accent {
+  background: linear-gradient(135deg, #C8922A 0%, #e8b84b 100%);
+  color: #122A52;
+  box-shadow: 0 4px 14px rgba(200, 146, 42, 0.35), inset 0 1px 0 rgba(255,255,255,0.4);
+}
+.btn-accent:hover {
+  background: linear-gradient(135deg, #a5751e 0%, #C8922A 100%);
+  color: #ffffff;
+  box-shadow: 0 8px 22px rgba(200, 146, 42, 0.48);
+}
+
+.btn-success {
+  background: linear-gradient(135deg, #16a34a 0%, #22c55e 100%);
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(22, 163, 74, 0.35), inset 0 1px 0 rgba(255,255,255,0.25);
+}
+.btn-success:hover {
+  background: linear-gradient(135deg, #15803d 0%, #16a34a 100%);
+  box-shadow: 0 8px 22px rgba(22, 163, 74, 0.48);
+}
+
+.btn-danger {
+  background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(220, 38, 38, 0.35), inset 0 1px 0 rgba(255,255,255,0.25);
+}
+.btn-danger:hover {
+  background: linear-gradient(135deg, #b91c1c 0%, #dc2626 100%);
+  box-shadow: 0 8px 22px rgba(220, 38, 38, 0.48);
+}
+
+.btn-warning {
+  background: linear-gradient(135deg, #d97706 0%, #f59e0b 100%);
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(217, 119, 6, 0.35), inset 0 1px 0 rgba(255,255,255,0.25);
+}
+.btn-warning:hover {
+  background: linear-gradient(135deg, #b45309 0%, #d97706 100%);
+  box-shadow: 0 8px 22px rgba(217, 119, 6, 0.48);
+}
+
 .btn-outline {
-  background:transparent;
-  border:1.5px solid var(--border);
-  color:var(--text-muted);
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(8px);
+  border: 1.5px solid rgba(203, 213, 225, 0.9);
+  color: var(--text-muted);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.04);
 }
-.btn-outline:hover { border-color:var(--primary); color:var(--primary); }
-.btn-sm { padding:5px 12px; font-size:12px; }
-.btn-lg { padding:11px 24px; font-size:15px; }
-.btn:disabled { opacity:.5; cursor:not-allowed; }
+.btn-outline:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: rgba(232, 239, 252, 0.8);
+  box-shadow: 0 4px 12px rgba(26, 58, 107, 0.12);
+}
+
+.btn-sm { padding: 6px 14px; font-size: 12px; border-radius: 8px; }
+.btn-lg { padding: 12px 26px; font-size: 15px; border-radius: 12px; }
+.btn:disabled { opacity: .55; cursor: not-allowed; transform: none !important; box-shadow: none !important; }
 
 /* ============================================================
    TABLES
