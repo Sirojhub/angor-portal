@@ -71,7 +71,17 @@ class DatabaseEngine {
       const dbPath = getDbFilePath();
       const dir = path.dirname(dbPath);
       if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-      fs.writeFileSync(dbPath, JSON.stringify(this.data, null, 2), 'utf8');
+
+      const tmpPath = dbPath + '.tmp';
+      const backupPath = path.join(dir, 'angor_portal.backup.json');
+      const jsonStr = JSON.stringify(this.data, null, 2);
+
+      // Atomic write to prevent zero-byte corruptions
+      fs.writeFileSync(tmpPath, jsonStr, 'utf8');
+      fs.renameSync(tmpPath, dbPath);
+
+      // Automatic backup snapshot
+      fs.writeFileSync(backupPath, jsonStr, 'utf8');
     } catch (e) {
       console.error('[DB] Saqlashda xatolik:', e.message);
     }
@@ -320,8 +330,19 @@ class DatabaseEngine {
           const id = parseInt(args[args.length - 1]);
           const task = db.data.tasks.find(t => t.id === id);
           if (task) {
-            if (cleanSql.includes('status = ?')) {
-              task.status = args[0];
+            try {
+              const setPart = cleanSql.substring(cleanSql.search(/SET/i) + 3, cleanSql.search(/WHERE/i)).trim();
+              const assignments = setPart.split(',').map(s => s.trim().split('=')[0].trim());
+              assignments.forEach((colName, idx) => {
+                if (idx < args.length - 1 && colName) {
+                  const val = args[idx];
+                  task[colName] = val;
+                  if (colName === 'assigned_to') task.assignedTo = parseInt(val);
+                  if (colName === 'assigned_name') task.assignedName = val;
+                }
+              });
+            } catch (e) {
+              if (cleanSql.includes('status = ?')) task.status = args[0];
             }
             task.updated_at = new Date().toISOString();
             db.save();
