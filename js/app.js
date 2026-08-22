@@ -1523,7 +1523,7 @@ function renderProfile(){
       </div>
     </div>
 
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px">
       <div class="card card-body">
         <div class="card-title mb-16">📊 Statistika</div>
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px">
@@ -1534,6 +1534,16 @@ function renderProfile(){
         <div class="progress-bar" style="height:10px">
           <div class="progress-fill high" style="width:${u.efficiency||75}%"></div>
         </div>
+      </div>
+
+      <div class="card card-body">
+        <div class="card-title mb-16">📲 Shaxsiy Telegram Chat ID</div>
+        <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px">Sizga topshiriqlar tayinlanganda bildirishnoma aynan ushbu shaxsiy Chat ID ga yuboriladi.</p>
+        <div class="form-group">
+          <label class="form-label">TELEGRAM CHAT ID</label>
+          <input type="text" class="form-control" id="myTelegramChatId" value="${u.telegram_chat_id || u.chat_id || u.telegramChatId || ''}" placeholder="Masalan: 578676876">
+        </div>
+        <button class="btn btn-primary" onclick="saveMyTelegramChatId()">💾 Saqlash</button>
       </div>
 
       <div class="card card-body">
@@ -1572,6 +1582,20 @@ function renderProfile(){
       </div>
     </div>
   `;
+}
+
+async function saveMyTelegramChatId() {
+  const u = Auth.currentUser;
+  const tgId = document.getElementById('myTelegramChatId').value.trim();
+  showToast('Telegram Chat ID saqlanmoqda...', 'info');
+
+  const res = await API.updateEmployee(u.id, { telegram_chat_id: tgId, chat_id: tgId });
+  u.telegram_chat_id = tgId;
+  u.chat_id = tgId;
+  Auth.setUser(u);
+  DB.update(DB.KEYS.USERS, u.id, { telegram_chat_id: tgId, chat_id: tgId });
+
+  showToast('✅ Shaxsiy Telegram Chat ID saqlandi!', 'success');
 }
 
 async function changePassword(){
@@ -1763,17 +1787,20 @@ async function renderSettings(){
 
       <div style="display:flex;flex-direction:column;gap:16px">
         <div class="card card-body">
-          <div class="card-title mb-16">🤖 Telegram Bot Integratsiyasi</div>
-          <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px">Yangi topshiriqlar yaratilganda va status o'zgarganda Telegram guruhiga bildirishnoma yuboradi.</p>
+          <div class="card-title mb-16">🤖 Telegram Bot Integratsiyasi (Tashkilot Asosiy Kanali)</div>
+          <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px">Umumiy tizim bot tokeni va tashkilotning rasmiy bildirishnomalar kanali/guruhi.</p>
           <div class="form-group">
             <label class="form-label">BOT TOKEN</label>
             <input type="text" class="form-control" id="tgToken" value="${tg.botToken || ''}" placeholder="7512345678:AAH1234567890...">
           </div>
           <div class="form-group">
-            <label class="form-label">CHAT ID (Guruh/Kanal)</label>
+            <label class="form-label">📢 TASHKILOT UMUMIY KANAL / GURUH CHAT ID</label>
             <input type="text" class="form-control" id="tgChatId" value="${tg.chatId || ''}" placeholder="-1001234567890">
+            <div style="font-size:11px;color:var(--primary);margin-top:6px;background:rgba(37,99,235,0.08);padding:8px 12px;border-radius:6px;line-height:1.4">
+              💡 <b>Eslatma:</b> Bu butun tashkilot uchun umumiy bot kanali. Har bir xodimning shaxsiy Chat ID si <b>"Mening profillim"</b> sahifasida alohida o'rnatiladi!
+            </div>
           </div>
-          <div style="display:flex;gap:8px">
+          <div style="display:flex;gap:8px;margin-top:12px">
             <button class="btn btn-primary" onclick="saveTelegramSettings()">💾 Saqlash</button>
             <button class="btn btn-accent" onclick="testTelegramBot()">🤖 Botni sinash</button>
           </div>
