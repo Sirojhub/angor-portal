@@ -104,10 +104,28 @@ function setupClock(){
 }
 
 // ============================================================
+// MOBILE NAVIGATION HELPERS
+// ============================================================
+function toggleMobileSidebar() {
+  const sb = document.getElementById('sidebar');
+  const ov = document.getElementById('sidebarOverlay');
+  if (sb) sb.classList.toggle('mobile-open');
+  if (ov) ov.classList.toggle('active');
+}
+
+function closeMobileSidebar() {
+  const sb = document.getElementById('sidebar');
+  const ov = document.getElementById('sidebarOverlay');
+  if (sb) sb.classList.remove('mobile-open');
+  if (ov) ov.classList.remove('active');
+}
+
+// ============================================================
 // NAVIGATSIYA
 // ============================================================
 function navigate(page){
   currentPage = page;
+  closeMobileSidebar();
   // Barcha sahifalarni yashirish
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
