@@ -524,9 +524,6 @@ async function changeStatus(id,status){
   const updated = DB.update(DB.KEYS.TASKS,id,{status});
   logActivity('update','task',id,'Topshiriq holati o\'zgartirildi: '+STATUS_MAP[status]);
   showToast('Holat o\'zgartirildi: '+STATUS_MAP[status],'success');
-  if (window.TelegramService) {
-    TelegramService.sendNotification('update', updated || { id, status });
-  }
   renderTasks(); buildTaskTabs(); renderDashboard();
 }
 
@@ -534,10 +531,7 @@ async function approveTask(id){
   await API.updateTask(id, { status: 'done' });
   const updated = DB.update(DB.KEYS.TASKS,id,{status:'done'});
   logActivity('approve','task',id,'Topshiriq tasdiqlandi');
-  showToast('Topshiriq tasdiqlandi va Telegram bildirishnomasi yuborildi! 📲','success');
-  if (window.TelegramService) {
-    TelegramService.sendNotification('done', updated || { id, status: 'done' });
-  }
+  showToast('Topshiriq tasdiqlandi va bildirishnoma yuborildi! 📲','success');
   renderTasks(); buildTaskTabs(); renderDashboard();
 }
 
