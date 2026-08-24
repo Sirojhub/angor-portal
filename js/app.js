@@ -11,6 +11,85 @@ const TASKS_PER_PAGE = 10;
 let editingClientId = null;
 let harvestChart, financeChart, taskPieChart;
 
+// --- Helper functions for Task & Notification Badge ---
+function normalizeTask(t) {
+  if (!t) return t;
+  const uid = t.assignedTo ?? t.assigned_to;
+  const name = t.assignedName ?? t.assigned_name ?? '—';
+  return {
+    ...t,
+    assignedTo: uid !== undefined && uid !== null ? Number(uid) : null,
+    assigned_to: uid !== undefined && uid !== null ? Number(uid) : null,
+    assignedName: name,
+    assigned_name: name
+  };
+}
+
+function updateTaskBadge() {
+  const badge = document.getElementById('navBadgeTasks');
+  if (!badge) return;
+  const u = Auth.currentUser;
+  if (!u) {
+    badge.style.display = 'none';
+    return;
+  }
+  const tasks = (DB.get(DB.KEYS.TASKS) || []).map(normalizeTask);
+  const myTasks = (u.role === 'director' || u.role === 'manager')
+    ? tasks
+    : tasks.filter(t => (t.assignedTo == u.id || t.assigned_to == u.id));
+
+  const active = myTasks.filter(t => t.status !== 'done').length;
+  const overdue = myTasks.filter(t => isOverdue(t.deadline) && t.status !== 'done').length;
+
+  if (active > 0) {
+    badge.textContent = active;
+    badge.style.display = 'flex';
+    if (overdue > 0) {
+      badge.className = 'nav-badge danger';
+    } else {
+      badge.className = 'nav-badge info';
+    }
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
+async function syncTasksAndNotifications() {
+  if (!Auth.currentUser) return;
+  try {
+    if (window.API) {
+      if (API.getTasks) {
+        const serverTasks = await API.getTasks();
+        if (Array.isArray(serverTasks) && serverTasks.length > 0) {
+          const normalized = serverTasks.map(normalizeTask);
+          DB.set(DB.KEYS.TASKS, normalized);
+        }
+      }
+      if (API.getNotifications) {
+        const serverNotifs = await API.getNotifications();
+        if (Array.isArray(serverNotifs)) {
+          const normNotifs = serverNotifs.map(n => ({
+            id: n.id,
+            userId: n.user_id,
+            user_id: n.user_id,
+            title: n.title,
+            message: n.message,
+            type: n.type || 'info',
+            isRead: Boolean(n.is_read),
+            is_read: Boolean(n.is_read),
+            created_at: n.created_at
+          }));
+          DB.set(DB.KEYS.NOTIFS, normNotifs);
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('[Sync Error]:', err);
+  }
+  updateTaskBadge();
+  updateNotifBadge();
+}
+
 // ============================================================
 // ILOVANI ISHGA TUSHIRISH
 // ============================================================
@@ -42,14 +121,21 @@ window.addEventListener('DOMContentLoaded', async function(){
     }
   } catch (err) {}
 
+  // Sync tasks & notifications
+  await syncTasksAndNotifications();
+
   // UI ni sozlash
   setupHeader();
   setupSidebar();
   setupClock();
   // Dashboard ni ko'rsatish
   navigate('dashboard');
-  // Bildirishnomalarni yangilash
+  // Badgelarni yangilash
+  updateTaskBadge();
   updateNotifBadge();
+
+  // Periodik sinxronizatsiya
+  setInterval(syncTasksAndNotifications, 10000);
 });
 
 // ============================================================
@@ -151,15 +237,17 @@ function navigate(page){
     settings:   renderSettings
   };
   if(renders[page]) renders[page]();
+  updateTaskBadge();
+  updateNotifBadge();
 }
 
 // ============================================================
 // DASHBOARD
 // ============================================================
 function renderDashboard(){
-  const tasks = DB.get(DB.KEYS.TASKS);
+  const tasks = DB.get(DB.KEYS.TASKS).map(normalizeTask);
   const u = Auth.currentUser;
-  const myTasks = u.role==='director' ? tasks : tasks.filter(t=>t.assignedTo===u.id);
+  const myTasks = (u.role==='director' || u.role==='manager') ? tasks : tasks.filter(t=>(t.assignedTo==u.id || t.assigned_to==u.id));
 
   const active  = myTasks.filter(t=>t.status!=='done').length;
   const overdue = myTasks.filter(t=>isOverdue(t.deadline)&&t.status!=='done').length;
@@ -231,18 +319,17 @@ function renderDashboard(){
     : '<div style="text-align:center;padding:16px;color:var(--text-muted);font-size:13px">✅ Muddati o\'tgan topshiriq yo\'q</div>';
 
   // Tasks badge
-  document.getElementById('navBadgeTasks').textContent = overdue;
-  document.getElementById('navBadgeTasks').style.display = overdue?'flex':'none';
+  updateTaskBadge();
 }
 
 // ============================================================
 // TOPSHIRIQLAR
 // ============================================================
 const STATUS_MAP = {
-  new:'Yangi', progress:'Jarayonda', review:'Tasdiqlashda', done:'Bajarildi'
+  new:'Yangi', progress:'Jarayonda', review:'Tasdiqlashda', rejected:'Rad etildi', done:'Bajarildi'
 };
 const STATUS_CLASS = {
-  new:'status-new', progress:'status-progress', review:'status-review', done:'status-done'
+  new:'status-new', progress:'status-progress', review:'status-review', rejected:'status-rejected', done:'status-done'
 };
 const PRIORITY_MAP = { high:'Yuqori', medium:'O\'rta', low:'Past' };
 const PRIORITY_CLASS = { high:'priority-high', medium:'priority-medium', low:'priority-low' };
@@ -275,17 +362,21 @@ function populateTaskFilters(){
 }
 
 function getFilteredTasks(){
-  let tasks = DB.get(DB.KEYS.TASKS);
+  let tasks = DB.get(DB.KEYS.TASKS).map(normalizeTask);
   const u = Auth.currentUser;
-  if(u.role==='employee') tasks=tasks.filter(t=>t.assignedTo===u.id);
+  if(u.role==='employee') tasks=tasks.filter(t=>(t.assignedTo==u.id || t.assigned_to==u.id));
 
-  if(taskTab!=='all') tasks=tasks.filter(t=>t.status===taskTab);
+  if (taskTab === 'overdue') {
+    tasks = tasks.filter(t => isOverdue(t.deadline) && t.status !== 'done');
+  } else if (taskTab !== 'all') {
+    tasks = tasks.filter(t => t.status === taskTab);
+  }
 
   const search = document.getElementById('taskSearch')?.value.toLowerCase();
-  if(search) tasks=tasks.filter(t=>t.title.toLowerCase().includes(search)||t.assignedName.toLowerCase().includes(search));
+  if(search) tasks=tasks.filter(t=>(t.title||'').toLowerCase().includes(search)||(t.assignedName||'').toLowerCase().includes(search));
 
   const user = document.getElementById('taskFilterUser')?.value;
-  if(user) tasks=tasks.filter(t=>t.assignedTo==user);
+  if(user) tasks=tasks.filter(t=>(t.assignedTo==user || t.assigned_to==user));
 
   const pri = document.getElementById('taskFilterPriority')?.value;
   if(pri) tasks=tasks.filter(t=>t.priority===pri);
@@ -297,13 +388,18 @@ function getFilteredTasks(){
 }
 
 function buildTaskTabs(){
-  const all = DB.get(DB.KEYS.TASKS);
+  let all = DB.get(DB.KEYS.TASKS).map(normalizeTask);
+  const u = Auth.currentUser;
+  if(u.role==='employee') all = all.filter(t=>(t.assignedTo==u.id || t.assigned_to==u.id));
+
   const tabs=[
     {key:'all',label:'Barchasi',count:all.length},
     {key:'new',label:'Yangi',count:all.filter(t=>t.status==='new').length},
     {key:'progress',label:'Jarayonda',count:all.filter(t=>t.status==='progress').length},
     {key:'review',label:'Tasdiqlashda',count:all.filter(t=>t.status==='review').length},
-    {key:'done',label:'Bajarildi',count:all.filter(t=>t.status==='done').length}
+    {key:'rejected',label:'Rad etilgan',count:all.filter(t=>t.status==='rejected').length},
+    {key:'done',label:'Bajarildi',count:all.filter(t=>t.status==='done').length},
+    {key:'overdue',label:'⚠️ Kechikayotganlar',count:all.filter(t=>isOverdue(t.deadline)&&t.status!=='done').length}
   ];
   document.getElementById('taskTabs').innerHTML = tabs.map(t=>`
     <div class="tab ${taskTab===t.key?'active':''}" onclick="setTaskTab('${t.key}')">
@@ -350,16 +446,19 @@ function renderTasks(){
               <button class="btn btn-sm btn-outline" onclick="viewTask(${t.id})">Ko'rish</button>
               ${isDir ? (
                 t.status==='review'
-                  ? `<button class="btn btn-sm btn-success" onclick="approveTask(${t.id})">✔ Tasdiqlash</button>`
+                  ? `<button class="btn btn-sm btn-success" onclick="approveTask(${t.id})">✔ Tasdiqlash</button>` +
+                    `<button class="btn btn-sm btn-danger" onclick="rejectTask(${t.id})">❌ Rad etish</button>`
                   : `<button class="btn btn-sm btn-outline" onclick="editTask(${t.id})">✏️</button>`
               ) : (
                 t.status==='new'
                   ? `<button class="btn btn-sm btn-primary" onclick="changeStatus(${t.id},'progress')">▶ Boshlash</button>`
-                  : t.status==='progress'
+                  : (t.status==='progress' || t.status==='rejected')
                     ? `<button class="btn btn-sm btn-success" onclick="changeStatus(${t.id},'review')">📤 Topshirish</button>`
                     : t.status==='review'
                       ? `<span style="font-size:11px;color:var(--warning);font-weight:600">⏳ Tasdiqlash kutilmoqda</span>`
-                      : ''
+                      : t.status==='done'
+                        ? `<span style="font-size:11px;color:var(--success);font-weight:600">✅ Bajarilgan</span>`
+                        : ''
               )}
             </div>
           </td>
@@ -482,11 +581,28 @@ async function saveTask(){
   } else {
     const res = await API.createTask(obj);
     const created = (res && res.task) ? res.task : DB.create(DB.KEYS.TASKS,obj);
-    if (!DB.getOne(DB.KEYS.TASKS, created.id)) {
-      DB.create(DB.KEYS.TASKS, created);
+    const normCreated = normalizeTask(created);
+    if (!DB.getOne(DB.KEYS.TASKS, normCreated.id)) {
+      DB.create(DB.KEYS.TASKS, normCreated);
+    } else {
+      DB.update(DB.KEYS.TASKS, normCreated.id, normCreated);
     }
-    taskId = created.id;
-    logActivity('create','task',created.id,'Yangi topshiriq yaratildi: '+title);
+    taskId = normCreated.id;
+
+    // Create local notification for employee
+    DB.create(DB.KEYS.NOTIFS, {
+      userId: uid,
+      user_id: uid,
+      title: 'Yangi topshiriq',
+      message: (uid === Auth.currentUser.id)
+        ? `Siz o'zingizga «${title}» topshirig'ini tayinlandingiz`
+        : `Sizga «${title}» topshirig'i tayinlandi`,
+      type: 'info',
+      isRead: false,
+      is_read: false
+    });
+
+    logActivity('create','task',taskId,'Yangi topshiriq yaratildi: '+title);
   }
 
   if (file && taskId) {
@@ -510,7 +626,9 @@ async function saveTask(){
   if (fileInput) fileInput.value = '';
   showToast('✅ Topshiriq va biriktirilgan hujjat saqlandi va Telegramga yuborildi! 📲','success');
   closeModal('taskModal');
+  await syncTasksAndNotifications();
   renderTasks(); buildTaskTabs(); renderDashboard(); renderDocs();
+  updateTaskBadge(); updateNotifBadge();
 }
 
 function viewTask(id){
@@ -561,15 +679,18 @@ function viewTask(id){
   let actionBtn = '';
   if (isDir) {
     if (t.status === 'review') {
-      actionBtn = `<button class="btn btn-success" onclick="approveTask(${t.id});closeModal('taskViewModal')">✔ Tasdiqlash</button>`;
+      actionBtn = `<button class="btn btn-success" onclick="approveTask(${t.id});closeModal('taskViewModal')">✔ Tasdiqlash</button> ` +
+                  `<button class="btn btn-danger" onclick="rejectTask(${t.id});closeModal('taskViewModal')">❌ Rad etish (Qayta ishlash)</button>`;
     }
   } else {
     if (t.status === 'new') {
       actionBtn = `<button class="btn btn-primary" onclick="changeStatus(${t.id},'progress');closeModal('taskViewModal')">▶ Boshlash</button>`;
-    } else if (t.status === 'progress') {
+    } else if (t.status === 'progress' || t.status === 'rejected') {
       actionBtn = `<button class="btn btn-success" onclick="changeStatus(${t.id},'review');closeModal('taskViewModal')">📤 Bajarib topshirish (Direktorga yuborish)</button>`;
     } else if (t.status === 'review') {
       actionBtn = `<span style="font-size:12px;color:var(--warning);font-weight:600;padding:6px 12px;background:rgba(234,179,8,0.1);border-radius:6px">⏳ Direktor tasdiqlashi kutilmoqda</span>`;
+    } else if (t.status === 'done') {
+      actionBtn = `<span style="font-size:12px;color:var(--success);font-weight:600;padding:6px 12px;background:rgba(34,197,94,0.1);border-radius:6px">✅ Bajarilgan va tasdiqlangan</span>`;
     }
   }
 
@@ -657,6 +778,7 @@ async function changeStatus(id,status){
   logActivity('update','task',id,'Topshiriq holati o\'zgartirildi: '+STATUS_MAP[status]);
   showToast('Holat o\'zgartirildi: '+STATUS_MAP[status],'success');
   renderTasks(); buildTaskTabs(); renderDashboard();
+  updateTaskBadge();
 }
 
 async function approveTask(id){
@@ -665,6 +787,20 @@ async function approveTask(id){
   logActivity('approve','task',id,'Topshiriq tasdiqlandi');
   showToast('Topshiriq tasdiqlandi va bildirishnoma yuborildi! 📲','success');
   renderTasks(); buildTaskTabs(); renderDashboard();
+  updateTaskBadge();
+}
+
+async function rejectTask(id){
+  const reason = prompt('Topshiriqni rad etish sababini kiriting (xodimmga ko\'rsatiladi):');
+  if (reason === null) return;
+
+  showToast('Topshiriq rad etilmoqda va xodimga yuborilmoqda...', 'info');
+  await API.updateTask(id, { status: 'rejected' });
+  const updated = DB.update(DB.KEYS.TASKS, id, { status: 'rejected' });
+  logActivity('reject', 'task', id, 'Topshiriq rad etildi: ' + (reason || 'Qayta ishlashga yuborildi'));
+  showToast('❌ Topshiriq rad etildi va xodimga bildirishnoma yuborildi!', 'warning');
+  renderTasks(); buildTaskTabs(); renderDashboard();
+  updateTaskBadge();
 }
 
 // ============================================================
@@ -2025,12 +2161,19 @@ async function testTelegramBot() {
 
 // ============================================================
 // BILDIRISHNOMALAR
-// ============================================================
 function updateNotifBadge(){
-  const notifs=DB.get(DB.KEYS.NOTIFS).filter(n=>n.userId===Auth.currentUser.id&&!n.isRead);
-  const badge=document.getElementById('notifBadge');
-  badge.textContent=notifs.length;
-  badge.style.display=notifs.length?'flex':'none';
+  const u = Auth.currentUser;
+  if (!u) return;
+  const notifs = DB.get(DB.KEYS.NOTIFS).filter(n => {
+    const userId = n.userId ?? n.user_id;
+    const isRead = n.isRead ?? n.is_read ?? false;
+    return (userId == u.id || userId == String(u.id)) && (!isRead || isRead === 0);
+  });
+  const badge = document.getElementById('notifBadge');
+  if (badge) {
+    badge.textContent = notifs.length;
+    badge.style.display = notifs.length ? 'flex' : 'none';
+  }
 }
 
 function toggleNotifPanel(){
@@ -2042,26 +2185,44 @@ function toggleNotifPanel(){
 }
 
 function renderNotifPanel(){
-  const notifs=DB.get(DB.KEYS.NOTIFS).filter(n=>n.userId===Auth.currentUser.id);
-  const icons={danger:'🔴',warning:'🟡',info:'🔵',success:'🟢'};
-  document.getElementById('notifList').innerHTML=notifs.length
-    ? notifs.map(n=>`<div class="notif-item ${n.isRead?'':'unread'}" onclick="readNotif(${n.id})">
-        <div class="notif-dot" style="${n.isRead?'opacity:0':''}"></div>
-        <div style="flex:1">
-          <div class="notif-text">${icons[n.type]||'📌'} <strong>${n.title}</strong><br>${n.message}</div>
-          <div class="notif-time">${fmtDateTime(n.created_at)}</div>
-        </div>
-      </div>`).join('')
+  const u = Auth.currentUser;
+  if (!u) return;
+  const notifs = DB.get(DB.KEYS.NOTIFS).filter(n => {
+    const userId = n.userId ?? n.user_id;
+    return (userId == u.id || userId == String(u.id));
+  });
+  const icons = { danger: '🔴', warning: '🟡', info: '🔵', success: '🟢' };
+  document.getElementById('notifList').innerHTML = notifs.length
+    ? notifs.map(n => {
+        const isRead = n.isRead ?? n.is_read ?? false;
+        return `<div class="notif-item ${isRead ? '' : 'unread'}" onclick="readNotif(${n.id})">
+          <div class="notif-dot" style="${isRead ? 'opacity:0' : ''}"></div>
+          <div style="flex:1">
+            <div class="notif-text">${icons[n.type] || '📌'} <strong>${n.title}</strong><br>${n.message}</div>
+            <div class="notif-time">${fmtDateTime(n.created_at)}</div>
+          </div>
+        </div>`;
+      }).join('')
     : '<div style="padding:20px;text-align:center;font-size:13px;color:var(--text-muted)">Bildirishnomalar yo\'q</div>';
 }
 
-function readNotif(id){
-  DB.update(DB.KEYS.NOTIFS,id,{isRead:true});
+async function readNotif(id){
+  DB.update(DB.KEYS.NOTIFS, id, { isRead: true, is_read: 1 });
+  if (window.API && API.markNotificationRead) {
+    try { await API.markNotificationRead(id); } catch(e){}
+  }
   renderNotifPanel(); updateNotifBadge();
 }
 
-function markAllRead(){
-  DB.get(DB.KEYS.NOTIFS).filter(n=>n.userId===Auth.currentUser.id).forEach(n=>DB.update(DB.KEYS.NOTIFS,n.id,{isRead:true}));
+async function markAllRead(){
+  const u = Auth.currentUser;
+  if (!u) return;
+  DB.get(DB.KEYS.NOTIFS)
+    .filter(n => (n.userId == u.id || n.user_id == u.id))
+    .forEach(n => DB.update(DB.KEYS.NOTIFS, n.id, { isRead: true, is_read: 1 }));
+  if (window.API && API.request) {
+    try { await API.request('notifications/read-all', 'PUT'); } catch(e){}
+  }
   renderNotifPanel(); updateNotifBadge();
 }
 
