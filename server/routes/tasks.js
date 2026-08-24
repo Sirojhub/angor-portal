@@ -69,13 +69,25 @@ router.post('/', auth, async (req, res) => {
   res.json({ success: true, task });
 });
 
-// PUT /api/tasks/:id
+// PUT /api/tasks/:id (Task 3-BAND: Task editing permissions)
 router.put('/:id', auth, async (req, res) => {
   const { id } = req.params;
   const task = db.prepare('SELECT * FROM tasks WHERE id = ?').get(id);
   if (!task) return res.status(404).json({ error: 'Topshiriq topilmadi' });
 
-  const fields = ['title','description','assigned_to','assigned_name','deadline','priority','category','status'];
+  const isDirectorOrManager = req.user.role === 'director' || req.user.role === 'manager';
+  const isAssignedEmployee = parseInt(task.assigned_to) === parseInt(req.user.id);
+
+  if (!isDirectorOrManager && !isAssignedEmployee) {
+    return res.status(403).json({ error: 'Bu topshiriqni tahrirlash huquqingiz yo\'q' });
+  }
+
+  // Director/Manager can edit all fields
+  // Assigned Employee can ONLY edit status (other fields are ignored)
+  const fields = isDirectorOrManager 
+    ? ['title','description','assigned_to','assigned_name','deadline','priority','category','status']
+    : ['status'];
+
   const updates = [];
   const values  = [];
 
@@ -86,7 +98,7 @@ router.put('/:id', auth, async (req, res) => {
     }
   }
 
-  if (updates.length === 0) return res.status(400).json({ error: 'O\'zgartirish yo\'q' });
+  if (updates.length === 0) return res.status(400).json({ error: 'O\'zgartirish kiritilmadi' });
 
   updates.push('updated_at = datetime(\'now\')');
   values.push(id);
