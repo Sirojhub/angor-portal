@@ -160,3 +160,7 @@ const API = {
     return await this.request('logs');
   }
 };
+
+if (typeof window !== 'undefined') {
+  window.API = API;
+}
