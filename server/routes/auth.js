@@ -54,80 +54,17 @@ router.post('/login', (req, res) => {
   let user = db.prepare('SELECT * FROM users WHERE LOWER(email) = LOWER(?)').get(cleanEmail);
 
   if (!user) {
-    if (cleanEmail === 'aziz@angor.uz' || cleanEmail === 'director@angor.uz') {
-      const defaultDirectorHash = bcrypt.hashSync(password || 'REDACTED_OLD_PASSWORD', 10);
-      user = {
-        id: 1,
-        name: 'Aziz Karimov',
-        email: cleanEmail,
-        password: defaultDirectorHash,
-        role: 'director',
-        position: 'Direktor',
-        department: 'Boshqaruv',
-        phone: '+998 90 111-22-33',
-        avatar: 'AK',
-        avatar_color: '#C8922A',
-        hire_date: '2021-03-01',
-        efficiency: 98,
-        status: 'active'
-      };
-      try {
-        db.prepare('INSERT INTO users (id, name, email, password, role, position, department, phone, avatar, avatar_color, hire_date, efficiency, status) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)').run(
-          user.id, user.name, user.email, user.password, user.role, user.position, user.department, user.phone, user.avatar, user.avatar_color, user.hire_date, user.efficiency, user.status
-        );
-      } catch (e) {}
-    } else if (cleanEmail === 'sirojiddin1997tmi@gmail.com' || cleanEmail === 'sirojiddin@angor.uz') {
-      const hashed = bcrypt.hashSync(password || 'REDACTED_OLD_PASSWORD', 10);
-      user = {
-        id: 6,
-        name: 'Sirojiddin Faxriddinovich',
-        email: cleanEmail,
-        password: hashed,
-        role: 'employee',
-        position: 'Bosh Agronom',
-        department: 'Ishlab chiqarish',
-        phone: '+998 90 123-45-67',
-        avatar: 'SF',
-        avatar_color: '#C8922A',
-        hire_date: '2026-08-21',
-        efficiency: 95,
-        status: 'active'
-      };
-      try {
-        db.prepare('INSERT INTO users (id, name, email, password, role, position, department, phone, avatar, avatar_color, hire_date, efficiency, status) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)').run(
-          user.id, user.name, user.email, user.password, user.role, user.position, user.department, user.phone, user.avatar, user.avatar_color, user.hire_date, user.efficiency, user.status
-        );
-      } catch (e) {}
-    } else {
-      attemptRecord.count = (attemptRecord.count || 0) + 1;
-      attemptRecord.lastAttempt = now;
-      if (attemptRecord.count >= 5) attemptRecord.lockUntil = now + 15 * 60 * 1000;
-      loginAttempts.set(rateKey, attemptRecord);
-      return res.status(401).json({ error: 'Login yoki parol noto\'g\'ri' });
-    }
+    attemptRecord.count = (attemptRecord.count || 0) + 1;
+    attemptRecord.lastAttempt = now;
+    if (attemptRecord.count >= 5) attemptRecord.lockUntil = now + 15 * 60 * 1000;
+    loginAttempts.set(rateKey, attemptRecord);
+    return res.status(401).json({ error: 'Login yoki parol noto\'g\'ri' });
   }
 
-  // Password verification: strictly check password (or default setup passwords)
+  // Task 4: Strict password verification against DB hash (no defaultPasswords, no auto-provisioning)
   let validPass = false;
   if (user && user.password) {
     validPass = bcrypt.compareSync(password, user.password) || (password === user.password);
-  }
-
-  // Fallbacks for initial default setup accounts
-  if (!validPass) {
-    const defaultPasswords = {
-      'aziz@angor.uz': 'REDACTED_OLD_PASSWORD',
-      'director@angor.uz': 'REDACTED_OLD_PASSWORD',
-      'sirojiddin1997tmi@gmail.com': 'REDACTED_OLD_PASSWORD',
-      'sirojiddin@angor.uz': 'REDACTED_OLD_PASSWORD',
-      'dilnoza@angor.uz': 'REDACTED_OLD_PASSWORD',
-      'bobur@angor.uz': 'REDACTED_OLD_PASSWORD',
-      'malika@angor.uz': 'REDACTED_OLD_PASSWORD',
-      'jasur@angor.uz': 'REDACTED_OLD_PASSWORD'
-    };
-    if (defaultPasswords[cleanEmail] && password === defaultPasswords[cleanEmail]) {
-      validPass = true;
-    }
   }
 
   if (!validPass) {
@@ -145,10 +82,14 @@ router.post('/login', (req, res) => {
   // Successful login — reset rate-limit counter
   loginAttempts.delete(rateKey);
 
-  // JWT Token creation (Task 2: role is retrieved ONLY from backend DB)
+  // Task 6: Strict JWT Token creation using process.env.JWT_SECRET
+  if (!process.env.JWT_SECRET) {
+    throw new Error('JWT_SECRET muhit o\'zgaruvchisi (.env) sozlanmagan!');
+  }
+
   const token = jwt.sign(
     { id: user.id, email: user.email, role: user.role, name: user.name },
-    process.env.JWT_SECRET || 'REDACTED_OLD_JWT_SECRET',
+    process.env.JWT_SECRET,
     { expiresIn: process.env.JWT_EXPIRES || '8h' }
   );
 
@@ -291,8 +232,8 @@ router.put('/change-password', require('../middleware/auth'), async (req, res) =
 
   if (!user) return res.status(404).json({ error: 'Foydalanuvchi topilmadi' });
 
-  const valid = (currentPassword && user.password && (bcrypt.compareSync(currentPassword, user.password) || currentPassword === user.password)) ||
-                (currentPassword === 'REDACTED_OLD_PASSWORD' || currentPassword === 'REDACTED_OLD_PASSWORD' || currentPassword === 'REDACTED_OLD_PASSWORD');
+  // Task 5: Master password backdoor completely removed. Strictly verify current password.
+  const valid = currentPassword && user.password && (bcrypt.compareSync(currentPassword, user.password) || currentPassword === user.password);
 
   if (!valid) {
     return res.status(400).json({ error: 'Joriy parol noto\'g\'ri!' });
