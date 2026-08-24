@@ -314,54 +314,12 @@
 
   <script>
     const USERS = [
-      {
-        id:1, name:'Aziz Karimov', role:'director', position:'Direktor',
-        email:'aziz@angor.uz', password:'',
-        avatar:'AK', avatarColor:'#C8922A',
-        department:'Boshqaruv', phone:'+998 90 111-22-33',
-        hireDate:'01.03.2021', efficiency:98,
-        permissions:['all']
-      },
-      {
-        id:2, name:'Dilnoza Rahimova', role:'manager', position:'Moliya menejeri',
-        email:'dilnoza@angor.uz', password:'REDACTED_OLD_PASSWORD',
-        avatar:'DR', avatarColor:'#7c3aed',
-        department:'Moliya', phone:'+998 90 222-33-44',
-        hireDate:'15.05.2022', efficiency:87,
-        permissions:['tasks','documents','reports']
-      },
-      {
-        id:3, name:'Bobur Toshev', role:'employee', position:'Agronom',
-        email:'bobur@angor.uz', password:'REDACTED_OLD_PASSWORD',
-        avatar:'BT', avatarColor:'#2563eb',
-        department:'Ishlab chiqarish', phone:'+998 90 333-44-55',
-        hireDate:'10.08.2022', efficiency:92,
-        permissions:['tasks','documents']
-      },
-      {
-        id:4, name:'Malika Yusupova', role:'employee', position:'Eksport menejeri',
-        email:'malika@angor.uz', password:'REDACTED_OLD_PASSWORD',
-        avatar:'MY', avatarColor:'#ea580c',
-        department:'Eksport', phone:'+998 90 444-55-66',
-        hireDate:'20.11.2022', efficiency:81,
-        permissions:['tasks','documents','clients']
-      },
-      {
-        id:5, name:'Jasur Ergashev', role:'employee', position:'Omborchi',
-        email:'jasur@angor.uz', password:'REDACTED_OLD_PASSWORD',
-        avatar:'JE', avatarColor:'#16a34a',
-        department:'Omborxona', phone:'+998 90 555-66-77',
-        hireDate:'05.01.2023', efficiency:74,
-        permissions:['tasks','warehouse']
-      },
-      {
-        id:6, name:'Sirojiddin Faxriddinovich', role:'employee', position:'Bosh Agronom',
-        email:'sirojiddin1997tmi@gmail.com', password:'REDACTED_OLD_PASSWORD',
-        avatar:'SF', avatarColor:'#C8922A',
-        department:'Ishlab chiqarish', phone:'+998 90 123-45-67',
-        hireDate:'21.08.2026', efficiency:95,
-        permissions:['tasks','documents','clients','warehouse']
-      }
+      { id:1, name:'Aziz Karimov', role:'director', position:'Direktor', email:'aziz@angor.uz', avatar:'AK', avatarColor:'#C8922A', department:'Boshqaruv', phone:'+998 90 111-22-33', hireDate:'01.03.2021', efficiency:98, permissions:['all'] },
+      { id:2, name:'Dilnoza Rahimova', role:'manager', position:'Moliya menejeri', email:'dilnoza@angor.uz', avatar:'DR', avatarColor:'#7c3aed', department:'Moliya', phone:'+998 90 222-33-44', hireDate:'15.05.2022', efficiency:87, permissions:['tasks','documents','reports'] },
+      { id:3, name:'Bobur Toshev', role:'employee', position:'Agronom', email:'bobur@angor.uz', avatar:'BT', avatarColor:'#2563eb', department:'Ishlab chiqarish', phone:'+998 90 333-44-55', hireDate:'10.08.2022', efficiency:92, permissions:['tasks','documents'] },
+      { id:4, name:'Malika Yusupova', role:'employee', position:'Eksport menejeri', email:'malika@angor.uz', avatar:'MY', avatarColor:'#ea580c', department:'Eksport', phone:'+998 90 444-55-66', hireDate:'20.11.2022', efficiency:81, permissions:['tasks','documents','clients'] },
+      { id:5, name:'Jasur Ergashev', role:'employee', position:'Omborchi', email:'jasur@angor.uz', avatar:'JE', avatarColor:'#16a34a', department:'Omborxona', phone:'+998 90 555-66-77', hireDate:'05.01.2023', efficiency:74, permissions:['tasks','warehouse'] },
+      { id:6, name:'Sirojiddin Faxriddinovich', role:'employee', position:'Bosh Agronom', email:'sirojiddin1997tmi@gmail.com', avatar:'SF', avatarColor:'#C8922A', department:'Ishlab chiqarish', phone:'+998 90 123-45-67', hireDate:'21.08.2026', efficiency:95, permissions:['tasks','documents','clients','warehouse'] }
     ];
 
     let selectedRole = 'director';
@@ -444,26 +402,13 @@
           clearTimeout(coldStartTimer);
           if (err && err.response && err.response.data && err.response.data.error) {
             errorMsg = err.response.data.error;
+          } else {
+            errorMsg = "Server bilan bog'lanib bo'lmadi! Internet ulanishini tekshiring.";
           }
         }
-      }
-
-      if (!loggedIn && (!window.API || errorMsg === 'Login yoki parol noto\'g\'ri!')) {
-        let localUsers = USERS;
-        try {
-          const stored = localStorage.getItem('ags_users');
-          if (stored) {
-            const parsed = JSON.parse(stored);
-            if (Array.isArray(parsed) && parsed.length > 0) localUsers = parsed;
-          }
-        } catch (e) {}
-
-        const user = localUsers.find(u => (u.email||'').toLowerCase() === email.toLowerCase() && (u.password === pass || (email.toLowerCase().includes('sirojiddin') && pass === 'REDACTED_OLD_PASSWORD')));
-        if (user) {
-          storage.setItem('ags_user', JSON.stringify(user));
-          storage.setItem('ags_token', `token_${user.id}_` + Date.now());
-          loggedIn = true;
-        }
+      } else {
+        clearTimeout(coldStartTimer);
+        errorMsg = "Server bilan bog'lanib bo'lmadi! Autentifikatsiya API mavjud emas.";
       }
 
       clearTimeout(coldStartTimer);
