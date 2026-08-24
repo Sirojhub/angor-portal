@@ -1,8 +1,14 @@
 // ============================================================
-// JWT Auth Middleware
+// JWT Auth Middleware & Role-Based Access Control (RBAC)
 // ============================================================
 require('dotenv').config();
 const jwt = require('jsonwebtoken');
+
+// Task 6: Strict JWT_SECRET check — fail startup if not configured
+if (!process.env.JWT_SECRET) {
+  console.error('[CRITICAL] JWT_SECRET environment variable is not defined in .env!');
+  throw new Error('JWT_SECRET muhit o\'zgaruvchisi (.env) sozlanmagan!');
+}
 
 function authMiddleware(req, res, next) {
   const authHeader = req.headers['authorization'];
@@ -12,19 +18,30 @@ function authMiddleware(req, res, next) {
     return res.status(401).json({ error: 'Token taqdim etilmagan' });
   }
 
+  // Task 1: Strict JWT verification without any fallback/bypass
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'REDACTED_OLD_JWT_SECRET');
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.user = decoded;
-    next();
+    return next();
   } catch (err) {
-    if (token && (token.startsWith('token_') || token.startsWith('demo_'))) {
-      const db = require('../db/database');
-      const user = db.prepare('SELECT * FROM users WHERE role = ?').get('director') || { id: 1, email: 'aziz@angor.uz', role: 'director', name: 'Aziz Karimov' };
-      req.user = { id: user.id, email: user.email, role: user.role, name: user.name };
-      return next();
-    }
     return res.status(403).json({ error: 'Token noto\'g\'ri yoki muddati tugagan' });
   }
 }
 
+function requireRole(...allowedRoles) {
+  return (req, res, next) => {
+    if (!req.user || !req.user.role) {
+      return res.status(401).json({ error: 'Autentifikatsiya talab etiladi' });
+    }
+    if (allowedRoles.includes('all') || allowedRoles.includes(req.user.role) || req.user.role === 'director') {
+      return next();
+    }
+    return res.status(403).json({ error: 'Ruxsat etilmagan: ushbu amal uchun huquq yetarli emas' });
+  };
+}
+
 module.exports = authMiddleware;
+module.exports.authMiddleware = authMiddleware;
+module.exports.requireRole = requireRole;
+
+
