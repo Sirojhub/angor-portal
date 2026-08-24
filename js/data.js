@@ -71,10 +71,10 @@ function seedData(){
   localStorage.removeItem('ags_notifs');
   localStorage.removeItem('ags_logs');
 
-  // --- Xodimlar ---
+  // --- Xodimlar (Parollarsiz) ---
   const employees = [
-    {id:1,name:'Aziz Karimov',role:'director',position:'Direktor',email:'aziz@angor.uz',password:'',avatar:'AK',avatarColor:'#C8922A',department:'Boshqaruv',phone:'+998 90 111-22-33',hireDate:'2021-03-01',efficiency:98,status:'active'},
-    {id:6,name:'Sirojiddin Faxriddinovich',role:'employee',position:'Bosh agronom',email:'sirojiddin1997tmi@gmail.com',password:'REDACTED_OLD_PASSWORD',avatar:'SF',avatarColor:'#C8922A',department:'Ishlab chiqarish',phone:'+998 90 123-45-67',hireDate:'2026-08-21',efficiency:95,status:'active'}
+    {id:1,name:'Aziz Karimov',role:'director',position:'Direktor',email:'aziz@angor.uz',avatar:'AK',avatarColor:'#C8922A',department:'Boshqaruv',phone:'+998 90 111-22-33',hireDate:'2021-03-01',efficiency:98,status:'active'},
+    {id:6,name:'Sirojiddin Faxriddinovich',role:'employee',position:'Bosh agronom',email:'sirojiddin1997tmi@gmail.com',avatar:'SF',avatarColor:'#C8922A',department:'Ishlab chiqarish',phone:'+998 90 123-45-67',hireDate:'2026-08-21',efficiency:95,status:'active'}
   ];
   DB.set(DB.KEYS.USERS, employees);
 
