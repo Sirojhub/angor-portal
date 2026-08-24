@@ -210,9 +210,23 @@ router.post('/', auth, upload.single('file'), async (req, res) => {
     fileType = req.body.fileType;
   }
 
-  const targetId = target_user_id ? parseInt(target_user_id) : null;
+  let targetId = target_user_id ? parseInt(target_user_id) : null;
   const replyId = reply_to_id ? parseInt(reply_to_id) : null;
   const taskId = task_id ? parseInt(task_id) : null;
+
+  // Audit Fix 4: Auto-bind task attachments to opposite party (Director <-> Employee) for 2-way visibility
+  if (taskId && !targetId) {
+    try {
+      const task = db.prepare('SELECT * FROM tasks WHERE id = ?').get(taskId);
+      if (task) {
+        if (req.user.id === task.assigned_to) {
+          targetId = task.created_by || 1; // Send to Director
+        } else {
+          targetId = task.assigned_to; // Send to Employee
+        }
+      }
+    } catch (e) {}
+  }
 
   const result = db.prepare(`
     INSERT INTO documents (title, category, version, file_type, file_size, file_path, uploaded_by, uploaded_name, upload_date, status, description, target_user_id, target_user_name, reply_to_id, task_id)
