@@ -42,7 +42,11 @@ class DatabaseEngine {
         this.data = { ...this.data, ...parsed };
       }
 
-      // Merge bundled git repository angor_portal.json users
+      // Task 8: Merge bundled git repository users (ONLY seed new missing accounts, NEVER overwrite existing DB passwords!)
+      // TODO (ARCHITECTURE NOTE):
+      // Current architecture uses JSON file database on Render.com Free Tier without persistent disk volume.
+      // Redeploying or restarting free instances may reset local disk files to repository defaults.
+      // For long-term production persistence across redeployments, migrate database to PostgreSQL/MySQL (e.g. Render PostgreSQL or Supabase).
       const bundledPath = path.resolve(__dirname, 'angor_portal.json');
       if (fs.existsSync(bundledPath)) {
         try {
@@ -54,8 +58,6 @@ class DatabaseEngine {
               const hasUser = this.data.users.find(u => (u.email || '').toLowerCase() === (bu.email || '').toLowerCase());
               if (!hasUser) {
                 this.data.users.push(bu);
-              } else {
-                hasUser.password = bu.password; // Sync password
               }
             }
           }
