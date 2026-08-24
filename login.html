@@ -232,6 +232,7 @@
   <div class="shape shape-1"></div>
   <div class="shape shape-2"></div>
   <div class="shape shape-3"></div>
+  <canvas id="rippleCanvas" style="position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:0;pointer-events:none;"></canvas>
 
   <div class="login-wrap">
     <!-- Logo -->
@@ -521,5 +522,157 @@
       </div>
     </div>
   </div>
+
+  <!-- Interactive Grid Ripple Wave Canvas Script -->
+  <script>
+    (function() {
+      const canvas = document.getElementById('rippleCanvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+
+      let width = canvas.width = window.innerWidth;
+      let height = canvas.height = window.innerHeight;
+
+      const gap = 34; // Distance between grid intersections in px
+      let cols = 0, rows = 0;
+      let points = [];
+
+      let mouse = { x: -1000, y: -1000 };
+
+      window.addEventListener('mousemove', (e) => {
+        mouse.x = e.clientX;
+        mouse.y = e.clientY;
+      });
+
+      window.addEventListener('touchmove', (e) => {
+        if (e.touches.length > 0) {
+          mouse.x = e.touches[0].clientX;
+          mouse.y = e.touches[0].clientY;
+        }
+      });
+
+      window.addEventListener('mouseleave', () => {
+        mouse.x = -1000;
+        mouse.y = -1000;
+      });
+
+      window.addEventListener('resize', () => {
+        width = canvas.width = window.innerWidth;
+        height = canvas.height = window.innerHeight;
+        initGrid();
+      });
+
+      function Point(x, y) {
+        this.baseX = x;
+        this.baseY = y;
+        this.x = x;
+        this.y = y;
+        this.vx = 0;
+        this.vy = 0;
+      }
+
+      Point.prototype.update = function() {
+        // Distance to mouse pointer
+        const dx = mouse.x - this.x;
+        const dy = mouse.y - this.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        const maxDist = 170;
+
+        if (dist < maxDist) {
+          const angle = Math.atan2(dy, dx);
+          // Ripple displacement force pushing nodes away smoothly
+          const force = (1 - dist / maxDist) * 14;
+          this.vx -= Math.cos(angle) * force * 0.45;
+          this.vy -= Math.sin(angle) * force * 0.45;
+        }
+
+        // Elastic spring physics restoring nodes back to base coordinates
+        const springK = 0.05;
+        const damping = 0.86;
+
+        this.vx += (this.baseX - this.x) * springK;
+        this.vy += (this.baseY - this.y) * springK;
+
+        this.vx *= damping;
+        this.vy *= damping;
+
+        this.x += this.vx;
+        this.y += this.vy;
+      };
+
+      function initGrid() {
+        points = [];
+        cols = Math.ceil(width / gap) + 2;
+        rows = Math.ceil(height / gap) + 2;
+
+        for (let r = 0; r < rows; r++) {
+          for (let c = 0; c < cols; c++) {
+            points.push(new Point(c * gap - gap / 2, r * gap - gap / 2));
+          }
+        }
+      }
+
+      function draw() {
+        ctx.clearRect(0, 0, width, height);
+
+        // Update all node positions
+        for (let i = 0; i < points.length; i++) {
+          points[i].update();
+        }
+
+        // Render Grid Mesh & Glowing Waves
+        for (let r = 0; r < rows; r++) {
+          for (let c = 0; c < cols; c++) {
+            const idx = r * cols + c;
+            const pt = points[idx];
+            const distToMouse = Math.hypot(pt.x - mouse.x, pt.y - mouse.y);
+            const isNearMouse = distToMouse < 180;
+            const alpha = isNearMouse ? Math.max(0.1, 0.55 - distToMouse / 280) : 0.08;
+
+            // Horizontal grid line
+            if (c < cols - 1) {
+              const rightPt = points[idx + 1];
+              ctx.strokeStyle = isNearMouse ? `rgba(56, 189, 248, ${alpha})` : `rgba(255, 255, 255, 0.07)`;
+              ctx.lineWidth = isNearMouse ? 1.5 : 1;
+              ctx.beginPath();
+              ctx.moveTo(pt.x, pt.y);
+              ctx.lineTo(rightPt.x, rightPt.y);
+              ctx.stroke();
+            }
+
+            // Vertical grid line
+            if (r < rows - 1) {
+              const bottomPt = points[(r + 1) * cols + c];
+              ctx.strokeStyle = isNearMouse ? `rgba(56, 189, 248, ${alpha})` : `rgba(255, 255, 255, 0.07)`;
+              ctx.lineWidth = isNearMouse ? 1.5 : 1;
+              ctx.beginPath();
+              ctx.moveTo(pt.x, pt.y);
+              ctx.lineTo(bottomPt.x, bottomPt.y);
+              ctx.stroke();
+            }
+
+            // Glowing intersection node points
+            const offset = Math.hypot(pt.x - pt.baseX, pt.y - pt.baseY);
+            if (offset > 0.4) {
+              ctx.fillStyle = `rgba(200, 146, 42, ${Math.min(0.95, offset / 8)})`;
+              ctx.beginPath();
+              ctx.arc(pt.x, pt.y, 2 + Math.min(4, offset * 0.25), 0, Math.PI * 2);
+              ctx.fill();
+            } else if (isNearMouse) {
+              ctx.fillStyle = `rgba(56, 189, 248, ${0.4 * (1 - distToMouse / 180)})`;
+              ctx.beginPath();
+              ctx.arc(pt.x, pt.y, 1.8, 0, Math.PI * 2);
+              ctx.fill();
+            }
+          }
+        }
+
+        requestAnimationFrame(draw);
+      }
+
+      initGrid();
+      draw();
+    })();
+  </script>
 </body>
 </html>
