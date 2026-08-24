@@ -28,8 +28,8 @@ router.get('/', auth, (req, res) => {
 
 // POST /api/tasks
 router.post('/', auth, async (req, res) => {
-  if (req.user.role !== 'director') {
-    return res.status(403).json({ error: 'Faqat Direktor yangi topshiriq berishi mumkin' });
+  if (req.user.role !== 'director' && req.user.role !== 'manager') {
+    return res.status(403).json({ error: 'Faqat Direktor yoki Menejer yangi topshiriq berishi mumkin' });
   }
 
   const { title, description, assigned_to, assigned_name, deadline, priority, category } = req.body;
@@ -69,7 +69,7 @@ router.post('/', auth, async (req, res) => {
   res.json({ success: true, task });
 });
 
-// PUT /api/tasks/:id (Task 3-BAND: Task editing permissions)
+// PUT /api/tasks/:id (Task 3-BAND: Task editing permissions, locking & notifications)
 router.put('/:id', auth, async (req, res) => {
   const { id } = req.params;
   const task = db.prepare('SELECT * FROM tasks WHERE id = ?').get(id);
@@ -80,6 +80,11 @@ router.put('/:id', auth, async (req, res) => {
 
   if (!isDirectorOrManager && !isAssignedEmployee) {
     return res.status(403).json({ error: 'Bu topshiriqni tahrirlash huquqingiz yo\'q' });
+  }
+
+  // Audit Fix 3: Completed tasks locked for employees
+  if (task.status === 'done' && !isDirectorOrManager) {
+    return res.status(403).json({ error: 'Bajarilgan va tasdiqlangan topshiriq statusini faqat Direktor qayta ochishi mumkin' });
   }
 
   // Director/Manager can edit all fields
@@ -107,15 +112,38 @@ router.put('/:id', auth, async (req, res) => {
 
   const updated = db.prepare('SELECT * FROM tasks WHERE id = ?').get(id);
 
-  // Log & Telegram notification
+  // Audit Fix 2: Log & In-App Notifications for status transitions
   if (req.body.status && req.body.status !== task.status) {
+    const newStatus = req.body.status;
     const statusMap = { new:'Yangi', progress:'Jarayonda', review:'Tasdiqlashda', done:'Bajarildi', rejected:'Rad etildi' };
+
     db.prepare(`INSERT INTO activity_logs (user_id, user_name, action, model, model_id, description) VALUES (?,?,?,?,?,?)`).run(
-      req.user.id, req.user.name, 'update', 'task', id, `«${task.title}» topshirig'i holatini «${statusMap[req.body.status] || req.body.status}» ga o'zgartirdi`
+      req.user.id, req.user.name, 'update', 'task', id, `«${task.title}» topshirig'i holatini «${statusMap[newStatus] || newStatus}» ga o'zgartirdi`
     );
 
+    // In-App Notification oqimi:
+    // 1. Employee -> Director/Manager: When submitted for review
+    if (newStatus === 'review') {
+      const recipientId = task.created_by || 1; // Director
+      db.prepare(`INSERT INTO notifications (user_id, title, message, type) VALUES (?,?,?,?)`).run(
+        recipientId, 'Topshiriq bajarildi (Tasdiqlash kutilmoqda)', `👤 ${req.user.name} «${task.title}» topshirig'ini bajarib topshirdi`, 'warning'
+      );
+    }
+    // 2. Director -> Employee: When approved (done)
+    else if (newStatus === 'done' && isDirectorOrManager && task.assigned_to !== req.user.id) {
+      db.prepare(`INSERT INTO notifications (user_id, title, message, type) VALUES (?,?,?,?)`).run(
+        task.assigned_to, 'Topshiriq tasdiqlandi', `✅ «${task.title}» topshirig'ingiz Direktor tomonidan tasdiqlandi`, 'success'
+      );
+    }
+    // 3. Director -> Employee: When rejected / sent back for revision
+    else if ((newStatus === 'rejected' || (newStatus === 'progress' && task.status === 'review')) && isDirectorOrManager && task.assigned_to !== req.user.id) {
+      db.prepare(`INSERT INTO notifications (user_id, title, message, type) VALUES (?,?,?,?)`).run(
+        task.assigned_to, 'Topshiriq rad etildi', `❌ «${task.title}» topshirig'ingiz Direktor tomonidan rad etildi va qayta ko'rib chiqishga yuborildi`, 'error'
+      );
+    }
+
     try {
-      await TelegramService.notifyTaskStatusUpdate(updated || task, task.status, req.body.status);
+      await TelegramService.notifyTaskStatusUpdate(updated || task, task.status, newStatus);
     } catch (e) {
       console.warn('[Telegram] Status yuborishda xato:', e.message);
     }
@@ -126,8 +154,8 @@ router.put('/:id', auth, async (req, res) => {
 
 // DELETE /api/tasks/:id
 router.delete('/:id', auth, (req, res) => {
-  if (req.user.role !== 'director') {
-    return res.status(403).json({ error: 'Faqat Direktor topshiriqlarni o\'chira oladi' });
+  if (req.user.role !== 'director' && req.user.role !== 'manager') {
+    return res.status(403).json({ error: 'Faqat Direktor yoki Menejer topshiriqlarni o\'chira oladi' });
   }
 
   const task = db.prepare('SELECT * FROM tasks WHERE id = ?').get(req.params.id);
