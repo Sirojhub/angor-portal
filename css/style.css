@@ -224,6 +224,7 @@ ul, ol { list-style:none; }
 }
 .nav-badge.warning { background:var(--warning); }
 .nav-badge.info { background:var(--info); }
+.nav-badge.danger { background:var(--danger); }
 
 .sidebar-footer {
   margin-top:auto;
@@ -477,6 +478,7 @@ tbody tr:hover { background:var(--bg-hover); }
 .status-progress  { background:#fef3c7; color:#b45309; }
 .status-review    { background:#ede9fe; color:#6d28d9; }
 .status-done      { background:#dcfce7; color:#15803d; }
+.status-rejected  { background:#fee2e2; color:#b91c1c; }
 .status-overdue   { background:#fee2e2; color:#b91c1c; }
 .status-active    { background:#dcfce7; color:#15803d; }
 .status-inactive  { background:#f1f5f9; color:#64748b; }
