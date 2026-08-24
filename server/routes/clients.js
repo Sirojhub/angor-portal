@@ -1,19 +1,20 @@
 // ============================================================
 // Clients Routes — /api/clients
 // ============================================================
-const express = require('express');
-const router  = express.Router();
-const db      = require('../db/database');
-const auth    = require('../middleware/auth');
+const express     = require('express');
+const router      = express.Router();
+const db          = require('../db/database');
+const auth        = require('../middleware/auth');
+const requireRole = require('../middleware/requireRole');
 
-// GET /api/clients
+// GET /api/clients (Viewable by all authenticated users)
 router.get('/', auth, (req, res) => {
   const clients = db.prepare('SELECT * FROM clients ORDER BY name ASC').all();
   res.json(clients);
 });
 
-// POST /api/clients
-router.post('/', auth, (req, res) => {
+// POST /api/clients (Task 4-BAND: Only Director/Manager can add clients)
+router.post('/', auth, requireRole('director', 'manager'), (req, res) => {
   const { name, inn, country, city, contact_person, phone, email, contract_number, ai_risk, risk_text, notes } = req.body;
   if (!name) return res.status(400).json({ error: 'Firma nomi majburiy' });
 
@@ -30,8 +31,8 @@ router.post('/', auth, (req, res) => {
   res.json({ success: true, client });
 });
 
-// PUT /api/clients/:id
-router.put('/:id', auth, (req, res) => {
+// PUT /api/clients/:id (Task 4-BAND: Only Director/Manager can edit clients)
+router.put('/:id', auth, requireRole('director', 'manager'), (req, res) => {
   const { id } = req.params;
   const client = db.prepare('SELECT * FROM clients WHERE id = ?').get(id);
   if (!client) return res.status(404).json({ error: 'Mijoz topilmadi' });
@@ -54,8 +55,8 @@ router.put('/:id', auth, (req, res) => {
   res.json({ success: true, client: updated });
 });
 
-// DELETE /api/clients/:id
-router.delete('/:id', auth, (req, res) => {
+// DELETE /api/clients/:id (Task 4-BAND: Only Director/Manager can delete clients)
+router.delete('/:id', auth, requireRole('director', 'manager'), (req, res) => {
   const client = db.prepare('SELECT * FROM clients WHERE id = ?').get(req.params.id);
   if (!client) return res.status(404).json({ error: 'Mijoz topilmadi' });
 
