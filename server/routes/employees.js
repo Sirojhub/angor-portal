@@ -50,15 +50,24 @@ router.post('/', auth, (req, res) => {
 
 // PUT /api/employees/:id
 router.put('/:id', auth, (req, res) => {
-  if (req.user.role !== 'director' && req.user.role !== 'manager' && req.user.id !== parseInt(req.params.id)) {
-    return res.status(403).json({ error: 'Ruxsat berilmadi' });
-  }
-
   const { id } = req.params;
   const user = db.prepare('SELECT * FROM users WHERE id = ?').get(id);
   if (!user) return res.status(404).json({ error: 'Xodim topilmadi' });
 
-  const fields = ['name','role','position','department','phone','avatar','avatar_color','hire_date','efficiency','status'];
+  const isDirectorOrManager = req.user.role === 'director' || req.user.role === 'manager';
+  const isSelf = req.user.id === parseInt(id);
+
+  if (!isDirectorOrManager && !isSelf) {
+    return res.status(403).json({ error: 'Ruxsat etilmagan: ushbu profilni tahrirlash huquqingiz yo\'q' });
+  }
+
+  // Task 1-BAND: Scoped field selection
+  // Director/Manager: can update all profile & RBAC fields
+  // Employee self-edit: ONLY name, phone, avatar, avatar_color, telegram_chat_id, password (role, position, department, hire_date, efficiency, status are ignored)
+  const fields = isDirectorOrManager 
+    ? ['name','role','position','department','phone','avatar','avatar_color','hire_date','efficiency','status']
+    : ['name','phone','avatar','avatar_color'];
+
   const updates = []; const values = [];
 
   for (const f of fields) {
