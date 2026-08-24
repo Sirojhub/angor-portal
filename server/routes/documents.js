@@ -66,10 +66,30 @@ function getFileTypeExt(filename, mimeType = '') {
   return ext || 'FILE';
 }
 
-// GET /api/documents
+// Task 2.2 — Document Access Control Rule Helper
+function canAccessDocument(doc, user) {
+  if (!user) return false;
+  if (user.role === 'director') return true; // Director sees everything
+
+  const targetId = doc.target_user_id || doc.targetUserId;
+  // Public document (no target_user_id) -> visible to all authenticated users
+  if (!targetId || targetId === null || targetId === 0 || targetId === 'null') return true;
+
+  // Assigned specifically to user or uploaded by user
+  if (parseInt(targetId) === parseInt(user.id)) return true;
+  if (parseInt(doc.uploaded_by || doc.uploadedBy) === parseInt(user.id)) return true;
+
+  return false;
+}
+
+// GET /api/documents (Task 2.2: Filtered by user access rights)
 router.get('/', auth, (req, res) => {
   const { category, task_id } = req.query;
   let docs = db.prepare('SELECT * FROM documents ORDER BY upload_date DESC').all();
+
+  // Filter documents so confidential target_user_id documents remain hidden
+  docs = docs.filter(d => canAccessDocument(d, req.user));
+
   if (category && category !== 'all') {
     docs = docs.filter(d => d.category === category);
   }
@@ -79,17 +99,21 @@ router.get('/', auth, (req, res) => {
   res.json(docs);
 });
 
-// GET /api/documents/:id/file (View file inline)
-router.get('/:id/file', (req, res) => {
+// GET /api/documents/:id/file (View file inline - Task 2.1 & 2.2: Auth + RBAC)
+router.get('/:id/file', auth, (req, res) => {
   const doc = db.prepare('SELECT * FROM documents WHERE id = ?').get(req.params.id);
   if (!doc) return res.status(404).send('Hujjat topilmadi');
+
+  if (!canAccessDocument(doc, req.user)) {
+    return res.status(403).json({ error: "Bu hujjatni ko'rish huquqingiz yo'q" });
+  }
 
   let filePath = doc.file_path || doc.filePath;
   if (!filePath) return res.status(404).send('Fayl manzili mavjud emas');
 
   let absolutePath = null;
   const rawFileName = path.basename(filePath);
-  
+
   for (const candidateDir of candidateUploadDirs) {
     const p1 = path.join(candidateDir, rawFileName);
     if (fs.existsSync(p1)) { absolutePath = p1; break; }
@@ -98,14 +122,12 @@ router.get('/:id/file', (req, res) => {
   }
 
   if (!absolutePath || !fs.existsSync(absolutePath)) {
-    // If file is an image or document title suggests image, generate fallback image SVG
     const ext = path.extname(doc.title || doc.file_path || '').toLowerCase();
     const isImg = ['png','jpg','jpeg','gif','webp'].includes(ext) || (doc.file_type && ['PNG','JPG','JPEG'].includes(doc.file_type.toUpperCase()));
     if (isImg) {
       res.setHeader('Content-Type', 'image/svg+xml');
       return res.send(`<svg xmlns="http://www.w3.org/2000/svg" width="600" height="400" viewBox="0 0 600 400"><rect width="100%" height="100%" fill="#1e293b"/><text x="50%" y="40%" font-size="20" fill="#f8fafc" text-anchor="middle" font-family="sans-serif">🖼️ ${doc.title}</text><text x="50%" y="55%" font-size="14" fill="#94a3b8" text-anchor="middle" font-family="sans-serif">Hujjat rasmi saqlangan va faol. (ID: #${doc.id})</text></svg>`);
     }
-    // PDF fallback SVG / HTML
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     return res.send(`
       <div style="font-family:sans-serif;text-align:center;padding:40px;background:#f8fafc;color:#1e293b;border-radius:12px;margin:20px">
@@ -136,10 +158,14 @@ router.get('/:id/file', (req, res) => {
   res.sendFile(absolutePath);
 });
 
-// GET /api/documents/:id/download (Force File Download)
-router.get('/:id/download', (req, res) => {
+// GET /api/documents/:id/download (Force File Download - Task 2.1 & 2.2: Auth + RBAC)
+router.get('/:id/download', auth, (req, res) => {
   const doc = db.prepare('SELECT * FROM documents WHERE id = ?').get(req.params.id);
   if (!doc) return res.status(404).send('Hujjat topilmadi');
+
+  if (!canAccessDocument(doc, req.user)) {
+    return res.status(403).json({ error: "Bu hujjatni ko'rish huquqingiz yo'q" });
+  }
 
   let filePath = doc.file_path || doc.filePath;
   let absolutePath = null;
@@ -159,7 +185,6 @@ router.get('/:id/download', (req, res) => {
     return res.download(absolutePath, downloadName);
   }
 
-  // Fallback text download if file on disk was ephemeral
   res.setHeader('Content-Disposition', `attachment; filename="${downloadName}.txt"`);
   res.setHeader('Content-Type', 'text/plain; charset=utf-8');
   res.send(`ANGOR AGRO STAR MCHJ HUJJAT MA'LUMOTI\n--------------------------------------\nHujjat ID: #${doc.id}\nSarlavha: ${doc.title}\nKategoriya: ${doc.category}\nYuklagan: ${doc.uploaded_name || doc.uploadedName}\nSana: ${doc.upload_date || doc.uploadDate}\n--------------------------------------\nUshbu hujjat bazada rasman tasdiqlangan.`);
@@ -212,14 +237,12 @@ router.post('/', auth, upload.single('file'), async (req, res) => {
     req.user.id, req.user.name, 'upload', 'document', result.lastInsertRowid, `Yangi hujjat yukladi: «${title}» (${fileType}, ${fileSize})${target_user_name ? ' 🎯 Mas\'ul: '+target_user_name : ''}`
   );
 
-  // In-app Notification
   if (targetId && targetId !== req.user.id) {
     db.prepare(`INSERT INTO notifications (user_id, title, message, type) VALUES (?,?,?,?)`).run(
       targetId, 'Yangi hujjat biriktirildi', `${req.user.name} sizga «${title}» hujjatini biriktirdi`, 'info'
     );
   }
 
-  // Telegram notification
   try {
     const TelegramService = require('../services/telegram');
     const docObj = db.prepare('SELECT * FROM documents WHERE id = ?').get(result.lastInsertRowid);
@@ -234,12 +257,18 @@ router.post('/', auth, upload.single('file'), async (req, res) => {
   res.json({ success: true, document: doc });
 });
 
-// DELETE /api/documents/:id
+// DELETE /api/documents/:id (Task 2.3: Only uploader or Director can delete)
 router.delete('/:id', auth, (req, res) => {
   const doc = db.prepare('SELECT * FROM documents WHERE id = ?').get(req.params.id);
   if (!doc) return res.status(404).json({ error: 'Hujjat topilmadi' });
 
-  // Agar fayl diskda bo'lsa, o'chirish
+  const isOwner = parseInt(doc.uploaded_by || doc.uploadedBy) === parseInt(req.user.id);
+  const isDirector = req.user.role === 'director';
+
+  if (!isOwner && !isDirector) {
+    return res.status(403).json({ error: 'Ushbu hujjatni o\'chirish huquqingiz yo\'q' });
+  }
+
   if (doc.file_path) {
     const fullPath = path.resolve(__dirname, '../..', doc.file_path.replace(/^\//, ''));
     if (fs.existsSync(fullPath)) {
