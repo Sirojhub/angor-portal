@@ -75,6 +75,8 @@ router.put('/:id', auth, async (req, res) => {
   const task = db.prepare('SELECT * FROM tasks WHERE id = ?').get(id);
   if (!task) return res.status(404).json({ error: 'Topshiriq topilmadi' });
 
+  const oldStatus = task.status;
+
   const isDirectorOrManager = req.user.role === 'director' || req.user.role === 'manager';
   const isAssignedEmployee = parseInt(task.assigned_to) === parseInt(req.user.id);
 
@@ -113,7 +115,7 @@ router.put('/:id', auth, async (req, res) => {
   const updated = db.prepare('SELECT * FROM tasks WHERE id = ?').get(id);
 
   // Audit Fix 2: Log & In-App Notifications for status transitions
-  if (req.body.status && req.body.status !== task.status) {
+  if (req.body.status && req.body.status !== oldStatus) {
     const newStatus = req.body.status;
     const statusMap = { new:'Yangi', progress:'Jarayonda', review:'Tasdiqlashda', done:'Bajarildi', rejected:'Rad etildi' };
 
