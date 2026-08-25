@@ -7,6 +7,11 @@ const router  = express.Router();
 const bcrypt  = require('bcryptjs');
 const jwt     = require('jsonwebtoken');
 
+if (!process.env.JWT_SECRET) {
+  console.error('[CRITICAL] JWT_SECRET environment variable is not defined in .env!');
+  throw new Error('JWT_SECRET muhit o\'zgaruvchisi (.env) sozlanmagan!');
+}
+
 let db;
 try { db = require('../db/database'); } catch (e1) {
   try { db = require('./db/database'); } catch (e2) {
@@ -82,11 +87,9 @@ router.post('/login', (req, res) => {
   // Successful login — reset rate-limit counter
   loginAttempts.delete(rateKey);
 
-  const jwtSecret = process.env.JWT_SECRET || 'REDACTED_OLD_JWT_SECRET';
-
   const token = jwt.sign(
     { id: user.id, email: user.email, role: user.role, name: user.name },
-    jwtSecret,
+    process.env.JWT_SECRET,
     { expiresIn: process.env.JWT_EXPIRES || '8h' }
   );
 
@@ -246,4 +249,3 @@ router.put('/change-password', require('../middleware/auth'), async (req, res) =
 });
 
 module.exports = router;
-

@@ -4,7 +4,10 @@
 require('dotenv').config();
 const jwt = require('jsonwebtoken');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'REDACTED_OLD_JWT_SECRET';
+if (!process.env.JWT_SECRET) {
+  console.error('[CRITICAL] JWT_SECRET environment variable is not defined in .env!');
+  throw new Error('JWT_SECRET muhit o\'zgaruvchisi (.env) sozlanmagan!');
+}
 
 function authMiddleware(req, res, next) {
   const authHeader = req.headers['authorization'];
@@ -16,7 +19,7 @@ function authMiddleware(req, res, next) {
 
   // Strict JWT verification with secure fallback
   try {
-    const decoded = jwt.verify(token, JWT_SECRET);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.user = decoded;
     return next();
   } catch (err) {
@@ -39,5 +42,3 @@ function requireRole(...allowedRoles) {
 module.exports = authMiddleware;
 module.exports.authMiddleware = authMiddleware;
 module.exports.requireRole = requireRole;
-
-

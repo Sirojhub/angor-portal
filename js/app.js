@@ -1906,53 +1906,33 @@ async function changePassword(){
 
   showToast('Parol o\'zgartirilmoqda...','info');
 
-  let success = false;
   if (window.API && API.changePassword) {
     try {
       const res = await API.changePassword(cur, nw);
       if (res && res.success) {
-        success = true;
+        if (Auth.currentUser) {
+          Auth.currentUser.password = nw;
+          localStorage.setItem('ags_user', JSON.stringify(Auth.currentUser));
+          try {
+            DB.update(DB.KEYS.USERS, Auth.currentUser.id, { password: nw });
+          } catch (e) {}
+        }
+        showToast('🔑 Parolingiz muvaffaqiyatli o\'zgartirildi!', 'success');
+        ['curPass','newPass','confPass'].forEach(id => {
+          const el = document.getElementById(id);
+          if (el) el.value = '';
+        });
       } else if (res && res.error) {
         showToast(res.error, 'error');
-        return;
+      } else {
+        showToast('Xatolik yuz berdi. Iltimos qayta urinib ko\'ring.', 'error');
       }
     } catch (e) {
-      console.warn('[API] changePassword call failed, using fallback', e);
+      console.error('[API] changePassword call failed:', e);
+      showToast('Server bilan bog\'lanib bo\'lmadi. Iltimos, birozdan so\'ng qayta urinib ko\'ring.', 'error');
     }
-  }
-
-  if (!success) {
-    const u = Auth.currentUser;
-    if (u) {
-      const isDirector = u.role === 'director' || u.email === 'aziz@angor.uz';
-      const validLocal = isDirector || (!u.password || cur === u.password || cur === 'REDACTED_OLD_PASSWORD' || cur === 'REDACTED_OLD_PASSWORD' || cur === 'REDACTED_OLD_PASSWORD' || cur === 'REDACTED_OLD_PASSWORD');
-      if (validLocal) {
-        u.password = nw;
-        try {
-          DB.update(DB.KEYS.USERS, u.id, { password: nw });
-        } catch (e) {}
-        localStorage.setItem('ags_user', JSON.stringify(u));
-        success = true;
-      } else {
-        showToast('Joriy parol noto\'g\'ri!', 'error');
-        return;
-      }
-    }
-  }
-
-  if (success) {
-    if (Auth.currentUser) {
-      Auth.currentUser.password = nw;
-      localStorage.setItem('ags_user', JSON.stringify(Auth.currentUser));
-      try {
-        DB.update(DB.KEYS.USERS, Auth.currentUser.id, { password: nw });
-      } catch (e) {}
-    }
-    showToast('🔑 Parolingiz muvaffaqiyatli o\'zgartirildi!', 'success');
-    ['curPass','newPass','confPass'].forEach(id => {
-      const el = document.getElementById(id);
-      if (el) el.value = '';
-    });
+  } else {
+    showToast('Server bilan bog\'lanib bo\'lmadi. Iltimos, birozdan so\'ng qayta urinib ko\'ring.', 'error');
   }
 }
 

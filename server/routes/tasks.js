@@ -28,8 +28,8 @@ router.get('/', auth, (req, res) => {
 
 // POST /api/tasks
 router.post('/', auth, async (req, res) => {
-  if (req.user.role !== 'director' && req.user.role !== 'manager') {
-    return res.status(403).json({ error: 'Faqat Direktor yoki Menejer yangi topshiriq berishi mumkin' });
+  if (req.user.role !== 'director') {
+    return res.status(403).json({ error: 'Faqat Direktor yangi topshiriq berishi mumkin' });
   }
 
   const { title, description, assigned_to, assigned_name, deadline, priority, category } = req.body;
@@ -156,8 +156,8 @@ router.put('/:id', auth, async (req, res) => {
 
 // DELETE /api/tasks/:id
 router.delete('/:id', auth, (req, res) => {
-  if (req.user.role !== 'director' && req.user.role !== 'manager') {
-    return res.status(403).json({ error: 'Faqat Direktor yoki Menejer topshiriqlarni o\'chira oladi' });
+  if (req.user.role !== 'director') {
+    return res.status(403).json({ error: 'Faqat Direktor topshiriqlarni o\'chira oladi' });
   }
 
   const task = db.prepare('SELECT * FROM tasks WHERE id = ?').get(req.params.id);
