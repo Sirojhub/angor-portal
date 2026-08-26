@@ -44,11 +44,11 @@
       "deadline": "2026-08-28",
       "priority": "medium",
       "category": "Ishlab chiqarish",
-      "status": "new",
+      "status": "done",
       "created_by": 1,
       "id": 1,
       "created_at": "2026-08-24T06:45:46.453Z",
-      "updated_at": "2026-08-24T06:45:46.453Z"
+      "updated_at": "2026-08-26T06:04:02.777Z"
     },
     {
       "title": "Workflow Test Topshiriq",
@@ -113,11 +113,11 @@
       "deadline": "2026-10-10",
       "priority": "medium",
       "category": "Ishlab chiqarish",
-      "status": "review",
+      "status": "done",
       "created_by": 1,
       "id": 6,
       "created_at": "2026-08-24T08:42:09.989Z",
-      "updated_at": "2026-08-24T08:42:10.525Z"
+      "updated_at": "2026-08-26T06:04:00.249Z"
     },
     {
       "title": "Debug Notif Task",
@@ -126,11 +126,11 @@
       "deadline": "2026-10-10",
       "priority": "medium",
       "category": "Ishlab chiqarish",
-      "status": "review",
+      "status": "done",
       "created_by": 1,
       "id": 7,
       "created_at": "2026-08-24T08:42:41.603Z",
-      "updated_at": "2026-08-24T08:42:42.206Z"
+      "updated_at": "2026-08-26T06:03:58.241Z"
     },
     {
       "title": "Deep Audit Test Task",
@@ -509,6 +509,42 @@
       "type": "info",
       "is_read": 0,
       "created_at": "2026-08-24T08:43:08.863Z"
+    },
+    {
+      "id": 17,
+      "user_id": 1,
+      "title": "Topshiriq bajarildi (Tasdiqlash kutilmoqda)",
+      "message": "👤 Sirojiddin Faxriddinovich «test uchun sirojiddin» topshirig'ini bajarib topshirdi",
+      "type": "warning",
+      "is_read": 0,
+      "created_at": "2026-08-26T06:03:11.772Z"
+    },
+    {
+      "id": 18,
+      "user_id": 6,
+      "title": "Topshiriq tasdiqlandi",
+      "message": "✅ «Debug Notif Task» topshirig'ingiz Direktor tomonidan tasdiqlandi",
+      "type": "success",
+      "is_read": 0,
+      "created_at": "2026-08-26T06:03:58.245Z"
+    },
+    {
+      "id": 19,
+      "user_id": 6,
+      "title": "Topshiriq tasdiqlandi",
+      "message": "✅ «Debug Notif Task» topshirig'ingiz Direktor tomonidan tasdiqlandi",
+      "type": "success",
+      "is_read": 0,
+      "created_at": "2026-08-26T06:04:00.252Z"
+    },
+    {
+      "id": 20,
+      "user_id": 6,
+      "title": "Topshiriq tasdiqlandi",
+      "message": "✅ «test uchun sirojiddin» topshirig'ingiz Direktor tomonidan tasdiqlandi",
+      "type": "success",
+      "is_read": 0,
+      "created_at": "2026-08-26T06:04:02.779Z"
     }
   ],
   "activity_logs": [
@@ -801,6 +837,56 @@
       "model_id": 8,
       "description": "Yangi hujjat yukladi: «Maxfiy Hujjat Dilnoza» (PDF, 1.2 MB)",
       "created_at": "2026-08-24T08:43:08.861Z"
+    },
+    {
+      "id": 30,
+      "user_id": 6,
+      "user_name": "Sirojiddin Faxriddinovich",
+      "action": "update",
+      "model": "task",
+      "model_id": 1,
+      "description": "«test uchun sirojiddin» topshirig'i holatini «Jarayonda» ga o'zgartirdi",
+      "created_at": "2026-08-26T06:02:30.620Z"
+    },
+    {
+      "id": 31,
+      "user_id": 6,
+      "user_name": "Sirojiddin Faxriddinovich",
+      "action": "update",
+      "model": "task",
+      "model_id": 1,
+      "description": "«test uchun sirojiddin» topshirig'i holatini «Tasdiqlashda» ga o'zgartirdi",
+      "created_at": "2026-08-26T06:03:11.771Z"
+    },
+    {
+      "id": 32,
+      "user_id": 1,
+      "user_name": "Aziz Karimov",
+      "action": "update",
+      "model": "task",
+      "model_id": 7,
+      "description": "«Debug Notif Task» topshirig'i holatini «Bajarildi» ga o'zgartirdi",
+      "created_at": "2026-08-26T06:03:58.243Z"
+    },
+    {
+      "id": 33,
+      "user_id": 1,
+      "user_name": "Aziz Karimov",
+      "action": "update",
+      "model": "task",
+      "model_id": 6,
+      "description": "«Debug Notif Task» topshirig'i holatini «Bajarildi» ga o'zgartirdi",
+      "created_at": "2026-08-26T06:04:00.250Z"
+    },
+    {
+      "id": 34,
+      "user_id": 1,
+      "user_name": "Aziz Karimov",
+      "action": "update",
+      "model": "task",
+      "model_id": 1,
+      "description": "«test uchun sirojiddin» topshirig'i holatini «Bajarildi» ga o'zgartirdi",
+      "created_at": "2026-08-26T06:04:02.778Z"
     }
   ],
   "settings": {

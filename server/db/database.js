@@ -229,6 +229,8 @@ class DatabaseEngine {
           t.id = db.nextId('tasks');
           t.created_at = new Date().toISOString();
           t.updated_at = new Date().toISOString();
+          if (t.review_comment === undefined) t.review_comment = null;
+          if (t.batch_id === undefined) t.batch_id = null;
           db.data.tasks.push(t);
           db.save();
           return { lastInsertRowid: t.id };

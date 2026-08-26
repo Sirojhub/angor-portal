@@ -108,7 +108,10 @@ router.get('/me', require('../middleware/auth'), (req, res) => {
 // POST /api/auth/reset-password (Task 3: Rate limited, 10-min single-use code sent to contact)
 router.post('/reset-password', async (req, res) => {
   const { email } = req.body;
+  console.log('[Auth] POST /api/auth/reset-password so\'rovi keldi. Email:', email);
+
   if (!email) {
+    console.warn('[Auth] Reset password rad etildi: Email kiritilmagan.');
     return res.status(400).json({ error: 'Email kiritilishi shart' });
   }
 
@@ -121,6 +124,7 @@ router.post('/reset-password', async (req, res) => {
   const rRecord = resetAttempts.get(rateKey) || { count: 0, lockUntil: 0, lastAttempt: now };
   if (rRecord.lockUntil > now) {
     const minutesLeft = Math.ceil((rRecord.lockUntil - now) / (60 * 1000));
+    console.warn(`[Auth] Rate limit oshib ketdi. IP/Email: ${rateKey}, daqiqa qoldi: ${minutesLeft}`);
     return res.status(429).json({
       error: `Parolni tiklash bo'yicha juda ko'p so'rov berildi. ${minutesLeft} daqiqadan so'ng qayta urinib ko'ring.`
     });
@@ -132,6 +136,7 @@ router.post('/reset-password', async (req, res) => {
     rRecord.lastAttempt = now;
     if (rRecord.count >= 3) rRecord.lockUntil = now + 15 * 60 * 1000;
     resetAttempts.set(rateKey, rRecord);
+    console.warn(`[Auth] Foydalanuvchi topilmadi. Email: ${cleanEmail}`);
     return res.status(404).json({ error: 'Ushbu email bilan ro\'yxatdan o\'tgan xodim topilmadi' });
   }
 
@@ -150,24 +155,56 @@ router.post('/reset-password', async (req, res) => {
   if (rRecord.count >= 3) rRecord.lockUntil = now + 15 * 60 * 1000;
   resetAttempts.set(rateKey, rRecord);
 
-  // Send single-use token to user's registered Telegram contact
-  try {
-    const TelegramService = require('../services/telegram');
-    await TelegramService.sendMessage(
-      `🔑 <b>ANGOR AGRO STAR — PAROL TIKLASH KODI</b>\n` +
-      `--------------------------------------\n` +
-      `👤 <b>Xodim</b>: ${user.name}\n` +
-      `✉️ <b>Email</b>: ${user.email}\n` +
-      `🔐 <b>Bir martalik tasdiqlash kodi</b>: <code>${otpCode}</code>\n` +
-      `⏱️ <b>Amal qilish muddati</b>: 10 daqiqa (yagona martalik)\n` +
-      `--------------------------------------\n` +
-      `ℹ️ <i>Kod 10 daqiqa davomida amal qiladi. Havfsizlik sababli ushbu kodni hech kimga bermang.</i>`
-    );
-  } catch (e) {}
+  const EmailService = require('../services/email');
+  const TelegramService = require('../services/telegram');
 
+  // Email orqali yuborish
+  let emailResult = { ok: false, error: 'Bajarilmadi' };
+  try {
+    emailResult = await EmailService.sendResetCodeEmail(user.email, user.name, otpCode);
+    if (!emailResult.ok) {
+      console.error(`[Auth] EmailService yuborishda muammo:`, emailResult.error);
+    }
+  } catch (err) {
+    console.error(`[Auth] EmailService kutilmagan try/catch xatosi:`, err);
+    emailResult = { ok: false, error: err.message };
+  }
+
+  // Telegram orqali — FAQAT shu foydalanuvchining O'Z chat ID'siga (global admin kanaliga emas!)
+  let telegramResult = { ok: false };
+  const userChatId = user.telegram_chat_id || user.chat_id;
+  if (userChatId) {
+    try {
+      telegramResult = await TelegramService.sendMessage(
+        `🔑 <b>ANGOR AGRO STAR — PAROL TIKLASH KODI</b>\n` +
+        `--------------------------------------\n` +
+        `🔐 <b>Bir martalik tasdiqlash kodi</b>: <code>${otpCode}</code>\n` +
+        `⏱️ <b>Amal qilish muddati</b>: 10 daqiqa`,
+        null,
+        userChatId
+      );
+    } catch (err) {
+      console.error(`[Auth] TelegramService send xatosi:`, err.message);
+    }
+  } else {
+    console.log(`[Auth] Foydalanuvchining shaxsiy Telegram Chat ID'si yo'q. User ID: ${user.id}`);
+  }
+
+  const channels = [];
+  if (emailResult.ok) channels.push('Email');
+  if (telegramResult.ok) channels.push('Telegram');
+
+  if (channels.length === 0) {
+    console.error(`[Auth] Kod hech qaysi kanal orqali yuborilmadi! Email xatosi: ${emailResult.error || 'Noma\'lum'}`);
+    return res.status(500).json({
+      error: `Kod yuborib bo'lmadi (${emailResult.error || 'SMTP sozlamalarini tekshiring'}). Administratorga murojaat qiling.`
+    });
+  }
+
+  console.log(`[Auth] Reset kodi muvaffaqiyatli yuborildi. Kanallar: ${channels.join(', ')}`);
   res.json({
     success: true,
-    message: 'Parolni tiklash kodi tasdiqlangan aloqa kanalingizga (Telegram/Email) yuborildi. Kodi 10 daqiqa amal qiladi.'
+    message: `Tasdiqlash kodi ${channels.join(' va ')} orqali yuborildi. Kod 10 daqiqa amal qiladi.`
   });
 });
 

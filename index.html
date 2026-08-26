@@ -896,8 +896,14 @@
     </div>
     <div class="modal-body">
       <input type="hidden" id="taskId">
+      <div class="form-group" id="taskAssignAllGroup">
+        <label class="form-label" style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:10px 14px;background:rgba(200,146,42,0.08);border:1px solid rgba(200,146,42,0.25);border-radius:10px;margin-bottom:0">
+          <input type="checkbox" id="taskAssignAll" onchange="toggleAssignAll()" style="width:18px;height:18px;cursor:pointer;accent-color:var(--primary)">
+          <span style="font-weight:600;font-size:13px">👥 Barcha xodimlarga yuborish</span>
+        </label>
+      </div>
       <div class="form-row">
-        <div class="form-group">
+        <div class="form-group" id="taskAssignedSingleGroup">
           <label class="form-label">MAS'UL XODIM *</label>
           <select class="form-control" id="taskAssigned"></select>
         </div>
@@ -906,6 +912,7 @@
           <input type="date" class="form-control" id="taskDeadline">
         </div>
       </div>
+
       <div class="form-row">
         <div class="form-group">
           <label class="form-label">MUHIMLIK DARAJASI</label>
@@ -968,6 +975,38 @@
     </div>
     <div class="modal-body" id="taskViewBody"></div>
     <div class="modal-footer" id="taskViewFooter"></div>
+  </div>
+</div>
+
+<!-- Topshiriqni Rad Etish Modal -->
+<div class="modal-overlay" id="rejectTaskModal">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-header" style="border-bottom:1px solid rgba(239,68,68,0.3);background:rgba(239,68,68,0.05)">
+      <span class="modal-title" style="color:var(--danger)">❌ Topshiriqni rad etish</span>
+      <div class="modal-close" onclick="closeModal('rejectTaskModal')">×</div>
+    </div>
+    <div class="modal-body">
+      <div style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:10px;padding:12px;margin-bottom:16px;font-size:13px;color:var(--text-muted)">
+        ⚠️ Rad etish sababi xodimga bildirishnoma sifatida yuboriladi va topshiriq ko'rinishida ko'rsatiladi.
+      </div>
+      <div class="form-group">
+        <label class="form-label" style="color:var(--danger);font-weight:600">RAD ETISH SABABI *</label>
+        <textarea
+          class="form-control"
+          id="rejectReasonInput"
+          rows="5"
+          placeholder="Sababni aniq yozing — xodimga aynan shu matn ko'rsatiladi va bildirishnoma sifatida yuboriladi..."
+          style="resize:vertical;min-height:120px"
+          data-task-id=""
+        ></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('rejectTaskModal')">Bekor qilish</button>
+      <button class="btn btn-danger" onclick="confirmRejectTask()" style="gap:6px">
+        ❌ Rad etish va yuborish
+      </button>
+    </div>
   </div>
 </div>
 

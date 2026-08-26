@@ -46,8 +46,6 @@ const fs = require('fs');
 app.use(express.static(path.join(__dirname, '..')));
 app.use(express.static(process.cwd()));
 app.use(express.static(__dirname));
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
-app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
 function loadRoute(name) {
   const candidates = [

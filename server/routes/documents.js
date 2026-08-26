@@ -41,9 +41,18 @@ const storage = multer.diskStorage({
   }
 });
 
+const ALLOWED_EXTENSIONS = ['.pdf', '.doc', '.docx', '.xls', '.xlsx', '.png', '.jpg', '.jpeg', '.zip', '.txt'];
+
 const upload = multer({
   storage,
-  limits: { fileSize: 50 * 1024 * 1024 } // 50MB maks
+  limits: { fileSize: 50 * 1024 * 1024 }, // 50MB maks
+  fileFilter: (req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (!ALLOWED_EXTENSIONS.includes(ext)) {
+      return cb(new Error(`Ruxsat etilmagan fayl turi: ${ext}. Ruxsat etilgan: ${ALLOWED_EXTENSIONS.join(', ')}`));
+    }
+    cb(null, true);
+  }
 });
 
 function formatFileSize(bytes) {
@@ -122,23 +131,7 @@ router.get('/:id/file', auth, (req, res) => {
   }
 
   if (!absolutePath || !fs.existsSync(absolutePath)) {
-    const ext = path.extname(doc.title || doc.file_path || '').toLowerCase();
-    const isImg = ['png','jpg','jpeg','gif','webp'].includes(ext) || (doc.file_type && ['PNG','JPG','JPEG'].includes(doc.file_type.toUpperCase()));
-    if (isImg) {
-      res.setHeader('Content-Type', 'image/svg+xml');
-      return res.send(`<svg xmlns="http://www.w3.org/2000/svg" width="600" height="400" viewBox="0 0 600 400"><rect width="100%" height="100%" fill="#1e293b"/><text x="50%" y="40%" font-size="20" fill="#f8fafc" text-anchor="middle" font-family="sans-serif">🖼️ ${doc.title}</text><text x="50%" y="55%" font-size="14" fill="#94a3b8" text-anchor="middle" font-family="sans-serif">Hujjat rasmi saqlangan va faol. (ID: #${doc.id})</text></svg>`);
-    }
-    res.setHeader('Content-Type', 'text/html; charset=utf-8');
-    return res.send(`
-      <div style="font-family:sans-serif;text-align:center;padding:40px;background:#f8fafc;color:#1e293b;border-radius:12px;margin:20px">
-        <div style="font-size:48px;margin-bottom:16px">📄</div>
-        <h2 style="font-size:18px;font-weight:700;margin-bottom:8px">«${doc.title}»</h2>
-        <p style="font-size:13px;color:#64748b;margin-bottom:16px">Hujjat formati: <strong>${doc.file_type || 'PDF'}</strong> (${doc.file_size || '1.2 MB'}) · Versiya: ${doc.version || 'v1'}</p>
-        <div style="background:#e2e8f0;padding:12px;border-radius:8px;font-size:12px;color:#334155;display:inline-block">
-          ✅ Hujjat «Angor Agro Star MCHJ» bazasida tasdiqlangan va xavfsiz saqlanmoqda.
-        </div>
-      </div>
-    `);
+    return res.status(404).json({ error: 'Fayl serverda topilmadi. Ehtimol, server qayta ishga tushganda fayl yo\'qolgan (Render bepul tarifida vaqtinchalik xotira ishlatiladi).' });
   }
 
   const ext = path.extname(absolutePath).toLowerCase();
@@ -181,17 +174,22 @@ router.get('/:id/download', auth, (req, res) => {
 
   const downloadName = doc.title ? `${doc.title.replace(/[^a-zA-Z0-9_\-.]/g, '_')}.${(doc.file_type || 'pdf').toLowerCase()}` : 'hujjat.pdf';
 
-  if (absolutePath && fs.existsSync(absolutePath)) {
-    return res.download(absolutePath, downloadName);
+  if (!absolutePath || !fs.existsSync(absolutePath)) {
+    return res.status(404).json({ error: 'Fayl serverda topilmadi. Ehtimol, server qayta ishga tushganda fayl yo\'qolgan (Render bepul tarifida vaqtinchalik xotira ishlatiladi).' });
   }
 
-  res.setHeader('Content-Disposition', `attachment; filename="${downloadName}.txt"`);
-  res.setHeader('Content-Type', 'text/plain; charset=utf-8');
-  res.send(`ANGOR AGRO STAR MCHJ HUJJAT MA'LUMOTI\n--------------------------------------\nHujjat ID: #${doc.id}\nSarlavha: ${doc.title}\nKategoriya: ${doc.category}\nYuklagan: ${doc.uploaded_name || doc.uploadedName}\nSana: ${doc.upload_date || doc.uploadDate}\n--------------------------------------\nUshbu hujjat bazada rasman tasdiqlangan.`);
+  return res.download(absolutePath, downloadName);
 });
 
 // POST /api/documents (Real File Upload)
-router.post('/', auth, upload.single('file'), async (req, res) => {
+router.post('/', auth, (req, res, next) => {
+  upload.single('file')(req, res, (err) => {
+    if (err) {
+      return res.status(400).json({ error: err.message });
+    }
+    next();
+  });
+}, async (req, res) => {
   const { title, category, version, description, target_user_id, target_user_name, reply_to_id, task_id } = req.body;
 
   if (!title || !category) {
