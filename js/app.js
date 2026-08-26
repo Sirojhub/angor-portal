@@ -418,13 +418,29 @@ function renderTasks(){
   const slice  = tasks.slice((taskPage-1)*TASKS_PER_PAGE, taskPage*TASKS_PER_PAGE);
   const isDir  = Auth.isDirector()||Auth.isManager();
 
+  // Batch guruh statistikasini hisoblash (faqat direktor uchun)
+  const allTasks = isDir ? DB.get(DB.KEYS.TASKS).map(normalizeTask) : [];
+  const batchStats = {};
+  if (isDir) {
+    allTasks.forEach(t => {
+      if (t.batch_id) {
+        if (!batchStats[t.batch_id]) batchStats[t.batch_id] = { total: 0, done: 0 };
+        batchStats[t.batch_id].total++;
+        if (t.status === 'done') batchStats[t.batch_id].done++;
+      }
+    });
+  }
+
   document.getElementById('tasksBody').innerHTML = slice.length
     ? slice.map((t,i)=>{
         const over=isOverdue(t.deadline)&&t.status!=='done';
+        const batch = (isDir && t.batch_id && batchStats[t.batch_id])
+          ? `<span style="font-size:10px;background:rgba(200,146,42,0.15);color:var(--primary);border-radius:4px;padding:2px 6px;margin-left:6px" title="Guruh topshirig'i">👥 guruh: ${batchStats[t.batch_id].done}/${batchStats[t.batch_id].total} bajarildi</span>`
+          : '';
         return `<tr style="${over?'border-left:3px solid var(--danger)':''}">
           <td style="color:var(--text-muted);font-weight:600">${String((taskPage-1)*TASKS_PER_PAGE+i+1).padStart(2,'0')}</td>
           <td>
-            <div style="font-weight:500;color:var(--text)">${t.title}</div>
+            <div style="font-weight:500;color:var(--text)">${t.title}${batch}</div>
             <div style="font-size:11px;color:var(--text-light);margin-top:2px">${t.category||'—'}</div>
           </td>
           <td>
@@ -506,6 +522,13 @@ function populateTaskAssignedSelect(selectedId = null) {
   if (selectedId) sel.value = selectedId;
 }
 
+function toggleAssignAll() {
+  const chk = document.getElementById('taskAssignAll');
+  const sg = document.getElementById('taskAssignedSingleGroup');
+  if (!sg) return;
+  sg.style.display = chk?.checked ? 'none' : '';
+}
+
 function openNewTaskModal(){
   populateTaskAssignedSelect();
   document.getElementById('taskId').value='';
@@ -516,6 +539,13 @@ function openNewTaskModal(){
   document.getElementById('taskCategory').value='Ishlab chiqarish';
   document.getElementById('taskModalTitle').textContent='Yangi topshiriq';
   document.getElementById('taskStatusGroup').style.display='none';
+  // Reset broadcast checkbox
+  const chk = document.getElementById('taskAssignAll');
+  if (chk) { chk.checked = false; }
+  const sg = document.getElementById('taskAssignedSingleGroup');
+  if (sg) sg.style.display = '';
+  const ag = document.getElementById('taskAssignAllGroup');
+  if (ag) ag.style.display = Auth.isDirector() ? '' : 'none';
   const fEl = document.getElementById('taskModalFile');
   if (fEl) fEl.value = '';
   openModal('taskModal');
@@ -534,6 +564,13 @@ function editTask(id){
   document.getElementById('taskStatus').value=t.status;
   document.getElementById('taskStatusGroup').style.display='block';
   document.getElementById('taskModalTitle').textContent='Topshiriqni tahrirlash';
+  // Tahrirlashda broadcast checkbox yashiriladi
+  const ag = document.getElementById('taskAssignAllGroup');
+  if (ag) ag.style.display = 'none';
+  const sg = document.getElementById('taskAssignedSingleGroup');
+  if (sg) sg.style.display = '';
+  const chk = document.getElementById('taskAssignAll');
+  if (chk) chk.checked = false;
   const fEl = document.getElementById('taskModalFile');
   if (fEl) fEl.value = '';
   openModal('taskModal');
@@ -546,11 +583,73 @@ async function saveTask(){
   }
   const id    = document.getElementById('taskId').value;
   const title = document.getElementById('taskTitle').value.trim();
-  const uid   = +document.getElementById('taskAssigned').value;
   const deadline = document.getElementById('taskDeadline').value;
+  const assignAll = document.getElementById('taskAssignAll')?.checked;
 
   if(!title){ showToast('Topshiriq sarlavhasini kiriting!','error'); return; }
   if(!deadline){ showToast('Muddatni kiriting!','error'); return; }
+
+  // --- Barcha xodimlarga yuborish (broadcast) ---
+  if (!id && assignAll) {
+    const allEmployees = DB.get(DB.KEYS.USERS).filter(u => u.role === 'employee');
+    if (!allEmployees.length) { showToast('Tizimda xodim topilmadi!', 'error'); return; }
+
+    const batchId = 'batch_' + Date.now();
+    const baseObj = {
+      title,
+      description: document.getElementById('taskDesc').value,
+      deadline,
+      priority: document.getElementById('taskPriority').value,
+      category: document.getElementById('taskCategory').value,
+      batch_id: batchId
+    };
+
+    showToast(`Topshiriq ${allEmployees.length} ta xodimga yuborilmoqda...`, 'info');
+
+    const results = await Promise.all(allEmployees.map(async emp => {
+      const obj = {
+        ...baseObj,
+        assigned_to: emp.id,
+        assigned_name: emp.name,
+        assignedTo: emp.id,
+        assignedName: emp.name,
+        status: 'new',
+        createdBy: Auth.currentUser.id
+      };
+      const res = await API.createTask(obj);
+      const created = (res && res.task) ? res.task : DB.create(DB.KEYS.TASKS, obj);
+      const normCreated = normalizeTask(created);
+      if (!DB.getOne(DB.KEYS.TASKS, normCreated.id)) {
+        DB.create(DB.KEYS.TASKS, normCreated);
+      } else {
+        DB.update(DB.KEYS.TASKS, normCreated.id, normCreated);
+      }
+      // Local notification
+      DB.create(DB.KEYS.NOTIFS, {
+        userId: emp.id, user_id: emp.id,
+        title: 'Yangi topshiriq',
+        message: `Sizga «${title}» topshirig'i tayinlandi`,
+        type: 'info', isRead: false, is_read: false
+      });
+      return normCreated;
+    }));
+
+    logActivity('create','task', batchId, `Barcha ${allEmployees.length} ta xodimga topshiriq yuborildi: ${title}`);
+    showToast(`✅ Topshiriq ${allEmployees.length} ta xodimga yuborildi!`, 'success');
+    // Reset checkbox
+    document.getElementById('taskAssignAll').checked = false;
+    const sg = document.getElementById('taskAssignedSingleGroup');
+    if (sg) sg.style.display = '';
+    closeModal('taskModal');
+    await syncTasksAndNotifications();
+    renderTasks(); buildTaskTabs(); renderDashboard();
+    updateTaskBadge(); updateNotifBadge();
+    return;
+  }
+
+  // --- Bitta xodimga yuborish ---
+  const uid   = +document.getElementById('taskAssigned').value;
+  if (!uid && !id) { showToast('Mas\'ul xodimni tanlang!', 'error'); return; }
 
   const user = DB.getOne(DB.KEYS.USERS, uid);
   const obj  = {
@@ -605,6 +704,7 @@ async function saveTask(){
     logActivity('create','task',taskId,'Yangi topshiriq yaratildi: '+title);
   }
 
+  let docUploadFailed = false;
   if (file && taskId) {
     const formData = new FormData();
     formData.append('title', `${title} (Topshiriq hujjati)`);
@@ -616,15 +716,25 @@ async function saveTask(){
     formData.append('file', file);
 
     try {
-      const docRes = await API.uploadDocument(formData);
+      const docRes = await API.createDoc(formData);
       if (docRes && docRes.document) {
         DB.create(DB.KEYS.DOCS, docRes.document);
+      } else {
+        docUploadFailed = true;
+        console.error('[Task Document Upload] Server javobida document yo\'q:', docRes);
       }
-    } catch (e) {}
+    } catch (e) {
+      console.error('[Task Document Upload Error]:', e);
+      docUploadFailed = true;
+    }
   }
 
   if (fileInput) fileInput.value = '';
-  showToast('✅ Topshiriq va biriktirilgan hujjat saqlandi va Telegramga yuborildi! 📲','success');
+  if (file && docUploadFailed) {
+    showToast('⚠️ Topshiriq saqlandi, lekin hujjatni yuklab bo\'lmadi. Topshiriq ko\'rish oynasidan qayta urinib ko\'ring.', 'error');
+  } else {
+    showToast('✅ Topshiriq' + (file ? ' va biriktirilgan hujjat' : '') + ' saqlandi va Telegramga yuborildi! 📲', 'success');
+  }
   closeModal('taskModal');
   await syncTasksAndNotifications();
   renderTasks(); buildTaskTabs(); renderDashboard(); renderDocs();
@@ -637,6 +747,12 @@ function viewTask(id){
   const over=isOverdue(t.deadline)&&t.status!=='done';
   document.getElementById('taskViewTitle').textContent=t.title;
   document.getElementById('taskViewBody').innerHTML=`
+    ${t.status === 'rejected' && t.review_comment ? `
+      <div style="background:rgba(239,68,68,0.1);border:1px solid var(--danger);border-radius:10px;padding:14px;margin-bottom:16px">
+        <div style="font-weight:600;color:var(--danger);margin-bottom:6px">❌ Direktor rad etish sababi:</div>
+        <div style="font-size:14px;line-height:1.6">${t.review_comment}</div>
+      </div>
+    ` : ''}
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
       <div>
         <div class="info-section">
@@ -756,17 +872,21 @@ async function uploadTaskDocument(taskId) {
   if (file) formData.append('file', file);
 
   try {
-    const res = await API.uploadDocument(formData);
+    const res = await API.createDoc(formData);
     if (res && res.document) {
       DB.create(DB.KEYS.DOCS, res.document);
+      showToast('✅ Hujjat topshiriqqa muvaffaqiyatli biriktirildi!', 'success');
+      if (titleInput) titleInput.value = '';
+      if (fileInput) fileInput.value = '';
+      renderTaskDocs(taskId);
+      renderDocs();
+    } else {
+      console.error('[uploadTaskDocument] Server javobida document yo\'q:', res);
+      showToast('⚠️ Hujjat yuklashda muammo yuz berdi. Server javobi noto\'g\'ri.', 'error');
     }
-    showToast('✅ Hujjat topshiriqqa muvaffaqiyatli biriktirildi va Telegramga yuborildi!', 'success');
-    if (titleInput) titleInput.value = '';
-    if (fileInput) fileInput.value = '';
-    renderTaskDocs(taskId);
-    renderDocs();
   } catch (e) {
-    showToast('Hujjat yuklashda xatolik yuz berdi', 'error');
+    console.error('[uploadTaskDocument Error]:', e);
+    showToast('⚠️ Hujjat yuklashda xatolik: ' + e.message, 'error');
   }
 }
 
@@ -791,14 +911,35 @@ async function approveTask(id){
 }
 
 async function rejectTask(id){
-  const reason = prompt('Topshiriqni rad etish sababini kiriting (xodimmga ko\'rsatiladi):');
-  if (reason === null) return;
+  const reasonInput = document.getElementById('rejectReasonInput');
+  if (reasonInput) {
+    reasonInput.value = '';
+    reasonInput.dataset.taskId = id;
+  }
+  openModal('rejectTaskModal');
+}
 
-  showToast('Topshiriq rad etilmoqda va xodimga yuborilmoqda...', 'info');
-  await API.updateTask(id, { status: 'rejected' });
-  const updated = DB.update(DB.KEYS.TASKS, id, { status: 'rejected' });
-  logActivity('reject', 'task', id, 'Topshiriq rad etildi: ' + (reason || 'Qayta ishlashga yuborildi'));
-  showToast('❌ Topshiriq rad etildi va xodimga bildirishnoma yuborildi!', 'warning');
+async function confirmRejectTask() {
+  const reasonInput = document.getElementById('rejectReasonInput');
+  const id = reasonInput?.dataset.taskId;
+  const reason = reasonInput?.value.trim();
+
+  if (!id) { showToast('Topshiriq ID topilmadi', 'error'); return; }
+  if (!reason) { showToast('Iltimos, rad etish sababini yozing!', 'error'); return; }
+
+  closeModal('rejectTaskModal');
+  // Agar taskViewModal ochiq bo'lsa, uni ham yopamiz
+  closeModal('taskViewModal');
+
+  showToast('Topshiriq rad etilmoqda...', 'info');
+  const res = await API.updateTask(+id, { status: 'rejected', review_comment: reason });
+  if (!res || res.success === false) {
+    showToast(res?.error || 'Xatolik yuz berdi', 'error');
+    return;
+  }
+  DB.update(DB.KEYS.TASKS, +id, { status: 'rejected', review_comment: reason });
+  logActivity('reject', 'task', +id, 'Topshiriq rad etildi: ' + reason);
+  showToast('❌ Topshiriq rad etildi va xodimga sabab bilan yuborildi!', 'warning');
   renderTasks(); buildTaskTabs(); renderDashboard();
   updateTaskBadge();
 }
