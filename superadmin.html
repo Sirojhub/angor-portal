@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tizim Administratori</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Inter',sans-serif;background:#0f172a;color:#e2e8f0;min-height:100vh}
+
+    /* ── Login sahifasi ── */
+    #loginPage{
+      display:flex;align-items:center;justify-content:center;min-height:100vh;
+      background:linear-gradient(135deg,#0f172a 0%,#1e293b 50%,#0f172a 100%);
+    }
+    .sa-login-box{
+      background:rgba(255,255,255,0.05);backdrop-filter:blur(20px);
+      border:1px solid rgba(255,255,255,0.1);border-radius:20px;
+      padding:48px 40px;width:100%;max-width:400px;
+    }
+    .sa-login-logo{text-align:center;margin-bottom:32px}
+    .sa-login-logo .icon{font-size:48px;margin-bottom:12px}
+    .sa-login-logo h1{font-size:20px;font-weight:700;color:#fff;margin-bottom:4px}
+    .sa-login-logo p{font-size:13px;color:rgba(255,255,255,0.4)}
+    .sa-input{
+      width:100%;padding:12px 16px;border-radius:10px;border:1px solid rgba(255,255,255,0.15);
+      background:rgba(255,255,255,0.08);color:#fff;font-size:14px;font-family:inherit;
+      margin-bottom:14px;outline:none;transition:.2s
+    }
+    .sa-input:focus{border-color:#C8922A;background:rgba(255,255,255,0.12)}
+    .sa-input::placeholder{color:rgba(255,255,255,0.3)}
+    .sa-btn-login{
+      width:100%;padding:13px;border-radius:10px;background:#C8922A;
+      color:#fff;font-size:15px;font-weight:700;border:none;cursor:pointer;
+      transition:.2s;font-family:inherit;margin-top:4px
+    }
+    .sa-btn-login:hover{opacity:.88;transform:translateY(-1px)}
+    .sa-error{color:#f87171;font-size:13px;text-align:center;margin-bottom:12px;display:none}
+
+    /* ── Dashboard ── */
+    #dashPage{display:none;min-height:100vh}
+    .sa-header{
+      background:rgba(15,23,42,0.98);backdrop-filter:blur(10px);
+      border-bottom:1px solid rgba(255,255,255,0.08);
+      padding:0 24px;height:60px;display:flex;align-items:center;justify-content:space-between;
+      position:sticky;top:0;z-index:100
+    }
+    .sa-header-title{font-size:15px;font-weight:700;color:#fff;display:flex;align-items:center;gap:10px}
+    .sa-badge{background:rgba(239,68,68,0.2);color:#f87171;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;border:1px solid rgba(239,68,68,0.3)}
+    .sa-logout{background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.3);color:#f87171;padding:6px 14px;border-radius:8px;cursor:pointer;font-size:13px;font-family:inherit}
+    .sa-logout:hover{background:rgba(239,68,68,0.25)}
+
+    .sa-layout{display:flex;min-height:calc(100vh - 60px)}
+    .sa-sidebar{
+      width:220px;min-width:220px;background:rgba(15,23,42,0.7);
+      border-right:1px solid rgba(255,255,255,0.08);padding:20px 0
+    }
+    .sa-nav-item{
+      display:flex;align-items:center;gap:10px;padding:10px 20px;cursor:pointer;
+      font-size:14px;color:rgba(255,255,255,0.55);transition:.15s;border-left:3px solid transparent
+    }
+    .sa-nav-item:hover{color:#fff;background:rgba(255,255,255,0.05)}
+    .sa-nav-item.active{color:#fff;background:rgba(200,146,42,0.12);border-left-color:#C8922A}
+
+    .sa-content{flex:1;padding:28px;overflow-y:auto}
+    .sa-section{display:none}
+    .sa-section.active{display:block}
+    .sa-section-title{font-size:20px;font-weight:700;margin-bottom:20px;color:#fff}
+
+    .sa-card{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:20px;margin-bottom:16px}
+    .sa-card-title{font-size:12px;font-weight:700;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:.8px;margin-bottom:16px}
+
+    .sa-stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:20px}
+    .sa-stat{
+      background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);
+      border-radius:14px;padding:20px;text-align:center
+    }
+    .sa-stat-val{font-size:36px;font-weight:800;color:#C8922A;margin-bottom:4px}
+    .sa-stat-label{font-size:12px;color:rgba(255,255,255,0.45);font-weight:500}
+
+    .sa-table-wrap{overflow-x:auto;border-radius:10px;border:1px solid rgba(255,255,255,0.08)}
+    table{width:100%;border-collapse:collapse;font-size:13px}
+    th{padding:10px 14px;background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.45);font-weight:600;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.6px}
+    td{padding:11px 14px;border-top:1px solid rgba(255,255,255,0.05);color:rgba(255,255,255,0.8)}
+    tr:hover td{background:rgba(255,255,255,0.03)}
+    .role-badge{display:inline-block;padding:2px 9px;border-radius:4px;font-size:11px;font-weight:600}
+    .role-director{background:rgba(200,146,42,0.2);color:#C8922A}
+    .role-manager{background:rgba(59,130,246,0.2);color:#60a5fa}
+    .role-employee{background:rgba(34,197,94,0.2);color:#4ade80}
+    .status-active{color:#4ade80;font-size:11px;font-weight:600}
+    .status-blocked{color:#f87171;font-size:11px;font-weight:600}
+
+    .sa-btn{padding:5px 12px;border-radius:6px;border:none;cursor:pointer;font-size:12px;font-weight:600;font-family:inherit;transition:.15s}
+    .sa-btn-primary{background:#C8922A;color:#fff}
+    .sa-btn-primary:hover{opacity:.85}
+    .sa-btn-danger{background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.3);color:#f87171}
+    .sa-btn-danger:hover{background:rgba(239,68,68,0.25)}
+    .sa-btn-success{background:rgba(34,197,94,0.15);border:1px solid rgba(34,197,94,0.3);color:#4ade80}
+    .sa-btn-success:hover{background:rgba(34,197,94,0.25)}
+    .sa-btn-outline{background:transparent;border:1px solid rgba(255,255,255,0.15);color:rgba(255,255,255,0.6)}
+    .sa-btn-outline:hover{border-color:rgba(255,255,255,0.3);color:#fff}
+
+    .sa-modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);backdrop-filter:blur(4px);z-index:1000;align-items:center;justify-content:center}
+    .sa-modal-overlay.open{display:flex}
+    .sa-modal{background:#1e293b;border:1px solid rgba(255,255,255,0.1);border-radius:16px;padding:28px;width:100%;max-width:400px}
+    .sa-modal h3{font-size:16px;font-weight:700;color:#fff;margin-bottom:16px}
+
+    #saToast{position:fixed;bottom:24px;right:24px;padding:12px 20px;border-radius:10px;font-size:13px;font-weight:600;z-index:9999;opacity:0;transition:.3s;pointer-events:none}
+    #saToast.show{opacity:1}
+    #saToast.success{background:#064e3b;color:#4ade80;border:1px solid rgba(74,222,128,.3)}
+    #saToast.error{background:#450a0a;color:#f87171;border:1px solid rgba(248,113,113,.3)}
+    #saToast.info{background:#1e3a5f;color:#60a5fa;border:1px solid rgba(96,165,250,.3)}
+
+    .sa-settings-form{max-width:520px}
+    .sa-form-group{margin-bottom:16px}
+    .sa-form-label{display:block;font-size:11px;color:rgba(255,255,255,0.45);font-weight:700;margin-bottom:6px;text-transform:uppercase;letter-spacing:.6px}
+
+    .action-create{color:#4ade80}.action-update{color:#60a5fa}.action-delete{color:#f87171}
+    .action-approve{color:#a78bfa}.action-reject{color:#fb923c}.action-upload{color:#38bdf8}
+  </style>
+</head>
+<body>
+
+<div id="loginPage">
+  <div class="sa-login-box">
+    <div class="sa-login-logo">
+      <div class="icon">🛡️</div>
+      <h1>Tizim Administratori</h1>
+      <p>Angor Agro Star Portal — Maxfiy Panel</p>
+    </div>
+    <div class="sa-error" id="loginError"></div>
+    <input type="text" class="sa-input" id="saUsername" placeholder="Foydalanuvchi nomi" autocomplete="off">
+    <input type="password" class="sa-input" id="saPassword" placeholder="Parol" onkeydown="if(event.key==='Enter')doLogin()">
+    <button class="sa-btn-login" onclick="doLogin()" id="loginBtn">🔐 Kirish</button>
+  </div>
+</div>
+
+<div id="dashPage">
+  <div class="sa-header">
+    <div class="sa-header-title">🛡️ Tizim Administratori <span class="sa-badge">SUPERADMIN</span></div>
+    <div style="display:flex;align-items:center;gap:12px">
+      <span style="font-size:13px;color:rgba(255,255,255,0.35)" id="headerTime"></span>
+      <button class="sa-logout" onclick="doLogout()">🚪 Chiqish</button>
+    </div>
+  </div>
+  <div class="sa-layout">
+    <div class="sa-sidebar">
+      <div class="sa-nav-item active" onclick="switchTab('stats')" id="tab-stats">📊 Statistika</div>
+      <div class="sa-nav-item" onclick="switchTab('users')" id="tab-users">👥 Foydalanuvchilar</div>
+      <div class="sa-nav-item" onclick="switchTab('logs')" id="tab-logs">📋 Faoliyat jurnali</div>
+      <div class="sa-nav-item" onclick="switchTab('settings')" id="tab-settings">⚙️ Sozlamalar</div>
+    </div>
+    <div class="sa-content">
+      <div class="sa-section active" id="section-stats">
+        <div class="sa-section-title">📊 Tizim statistikasi</div>
+        <div class="sa-stats-grid">
+          <div class="sa-stat"><div class="sa-stat-val" id="statUsers">—</div><div class="sa-stat-label">Jami foydalanuvchilar</div></div>
+          <div class="sa-stat"><div class="sa-stat-val" id="statTasks">—</div><div class="sa-stat-label">Jami topshiriqlar</div></div>
+          <div class="sa-stat"><div class="sa-stat-val" id="statDocs">—</div><div class="sa-stat-label">Jami hujjatlar</div></div>
+          <div class="sa-stat"><div class="sa-stat-val" id="statClients">—</div><div class="sa-stat-label">Jami mijozlar</div></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+          <div class="sa-card"><div class="sa-card-title">Foydalanuvchilar (rol bo'yicha)</div><div id="statsByRole" style="font-size:14px;line-height:2.2"></div></div>
+          <div class="sa-card"><div class="sa-card-title">Topshiriqlar (holat bo'yicha)</div><div id="statsByStatus" style="font-size:14px;line-height:2.2"></div></div>
+        </div>
+      </div>
+      <div class="sa-section" id="section-users">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+          <div class="sa-section-title" style="margin:0">👥 Foydalanuvchilar</div>
+          <input type="text" class="sa-input" placeholder="🔍 Ism yoki email..." style="width:220px;margin:0;padding:8px 12px;font-size:13px" oninput="filterUsers(this.value)" id="userSearch">
+        </div>
+        <div class="sa-table-wrap">
+          <table>
+            <thead><tr><th>#</th><th>Ism</th><th>Email</th><th>Lavozim</th><th>Rol</th><th>Holat</th><th>Amallar</th></tr></thead>
+            <tbody id="usersTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="sa-section" id="section-logs">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+          <div class="sa-section-title" style="margin:0">📋 Faoliyat jurnali</div>
+          <button class="sa-btn sa-btn-outline" style="padding:8px 16px" onclick="loadLogs()">🔄 Yangilash</button>
+        </div>
+        <div class="sa-table-wrap">
+          <table>
+            <thead><tr><th>Sana</th><th>Foydalanuvchi</th><th>Amal</th><th>Tavsif</th></tr></thead>
+            <tbody id="logsTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="sa-section" id="section-settings">
+        <div class="sa-section-title">⚙️ Sozlamalar</div>
+        <div class="sa-card sa-settings-form">
+          <div class="sa-card-title">🤖 Telegram Bot Integratsiyasi</div>
+          <div class="sa-form-group"><label class="sa-form-label">BOT TOKEN</label><input type="text" class="sa-input" id="tgBotToken" placeholder="7512345678:AAH1234567890..." style="margin:0"></div>
+          <div class="sa-form-group"><label class="sa-form-label">TASHKILOT KANAL / GURUH CHAT ID</label><input type="text" class="sa-input" id="tgChatId" placeholder="-1001234567890" style="margin:0"></div>
+          <div style="display:flex;gap:10px;margin-top:16px">
+            <button class="sa-btn sa-btn-primary" style="padding:10px 20px;font-size:13px" onclick="saveTgSettings()">💾 Saqlash</button>
+            <button class="sa-btn sa-btn-outline" style="padding:10px 20px;font-size:13px" onclick="testTg()">🤖 Sinash</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="sa-modal-overlay" id="resetModal">
+  <div class="sa-modal">
+    <h3>🔑 Parolni tiklash</h3>
+    <input type="hidden" id="resetUserId">
+    <p style="font-size:13px;color:rgba(255,255,255,.45);margin-bottom:16px" id="resetUserName"></p>
+    <div class="sa-form-group">
+      <label class="sa-form-label">Yangi parol (kamida 6 belgi)</label>
+      <input type="password" class="sa-input" id="newPasswordInput" placeholder="Yangi parolni kiriting..." style="margin:0" onkeydown="if(event.key==='Enter')doResetPassword()">
+    </div>
+    <div style="display:flex;gap:10px;margin-top:12px">
+      <button class="sa-btn sa-btn-outline" style="padding:10px 18px;flex:1" onclick="closeResetModal()">Bekor qilish</button>
+      <button class="sa-btn sa-btn-primary" style="padding:10px 18px;flex:2" onclick="doResetPassword()">🔑 Yangilash</button>
+    </div>
+  </div>
+</div>
+
+<div id="saToast"></div>
+
+<script>
+const BASE = '/api/superadmin';
+let allUsers = [];
+
+function getToken(){ return sessionStorage.getItem('sa_token'); }
+function setToken(t){ sessionStorage.setItem('sa_token', t); }
+function clearToken(){ sessionStorage.removeItem('sa_token'); }
+
+async function saFetch(path, method, body) {
+  method = method || 'GET';
+  const headers = {'Content-Type':'application/json','Authorization':'Bearer ' + getToken()};
+  const opts = {method, headers};
+  if (body && method !== 'GET') opts.body = JSON.stringify(body);
+  const res = await fetch(BASE + path, opts);
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Xatolik');
+  return data;
+}
+
+var toastTimer;
+function saToast(msg, type, ms) {
+  type = type || 'info'; ms = ms || 3000;
+  var el = document.getElementById('saToast');
+  el.textContent = msg;
+  el.className = 'show ' + type;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function(){ el.className = ''; }, ms);
+}
+
+function updateClock(){
+  var el = document.getElementById('headerTime');
+  if(el) el.textContent = new Date().toLocaleTimeString('uz-UZ');
+}
+setInterval(updateClock, 1000); updateClock();
+
+async function doLogin() {
+  var username = document.getElementById('saUsername').value.trim();
+  var password = document.getElementById('saPassword').value;
+  var errEl = document.getElementById('loginError');
+  var btn = document.getElementById('loginBtn');
+  if (!username || !password) { errEl.textContent='Username va parolni kiriting!'; errEl.style.display='block'; return; }
+  btn.disabled = true; btn.textContent = '⏳ Tekshirilmoqda...'; errEl.style.display = 'none';
+  try {
+    var res = await fetch('/api/superadmin/login', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username,password})});
+    var data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Xatolik');
+    setToken(data.token);
+    showDashboard();
+  } catch(e) {
+    errEl.textContent = e.message; errEl.style.display = 'block';
+    document.getElementById('saPassword').value = '';
+  } finally {
+    btn.disabled = false; btn.textContent = '🔐 Kirish';
+  }
+}
+
+function doLogout() {
+  clearToken();
+  document.getElementById('dashPage').style.display = 'none';
+  document.getElementById('loginPage').style.display = 'flex';
+  document.getElementById('saUsername').value = '';
+  document.getElementById('saPassword').value = '';
+}
+
+function showDashboard() {
+  document.getElementById('loginPage').style.display = 'none';
+  document.getElementById('dashPage').style.display = 'block';
+  switchTab('stats');
+}
+
+function switchTab(name) {
+  document.querySelectorAll('.sa-section').forEach(function(s){ s.classList.remove('active'); });
+  document.querySelectorAll('.sa-nav-item').forEach(function(n){ n.classList.remove('active'); });
+  document.getElementById('section-' + name).classList.add('active');
+  document.getElementById('tab-' + name).classList.add('active');
+  if(name==='stats') loadStats();
+  if(name==='users') loadUsers();
+  if(name==='logs') loadLogs();
+  if(name==='settings') loadSettings();
+}
+
+async function loadStats() {
+  try {
+    var s = await saFetch('/stats');
+    document.getElementById('statUsers').textContent = s.users.total;
+    document.getElementById('statTasks').textContent = s.tasks.total;
+    document.getElementById('statDocs').textContent = s.documents.total;
+    document.getElementById('statClients').textContent = s.clients.total;
+    var rL = {director:'👑 Direktor',manager:'📋 Menejer',employee:'👤 Xodim'};
+    document.getElementById('statsByRole').innerHTML = Object.entries(s.users.byRole).map(function(e){ return '<div>' + (rL[e[0]]||e[0]) + ': <b style="color:#C8922A">' + e[1] + '</b></div>'; }).join('');
+    var sL = {new:'🆕 Yangi',progress:'⚙️ Jarayonda',review:'🔍 Tasdiqlashda',done:'✅ Bajarildi',rejected:'❌ Rad etildi'};
+    document.getElementById('statsByStatus').innerHTML = Object.entries(s.tasks.byStatus).map(function(e){ return '<div>' + (sL[e[0]]||e[0]) + ': <b style="color:#C8922A">' + e[1] + '</b></div>'; }).join('') || '<div style="color:rgba(255,255,255,0.3)">Topshiriqlar yo\'q</div>';
+  } catch(e) { saToast('Statistikani yuklashda xato: ' + e.message, 'error'); }
+}
+
+async function loadUsers() {
+  try {
+    allUsers = await saFetch('/users');
+    renderUsers(allUsers);
+  } catch(e) { saToast('Foydalanuvchilarni yuklashda xato: ' + e.message, 'error'); }
+}
+
+function renderUsers(users) {
+  var rM = {director:'role-director',manager:'role-manager',employee:'role-employee'};
+  var rL = {director:'Direktor',manager:'Menejer',employee:'Xodim'};
+  document.getElementById('usersTableBody').innerHTML = users.map(function(u, i){
+    var statusHtml = u.status === 'blocked' ? '<span class="status-blocked">🔴 Bloklangan</span>' : '<span class="status-active">🟢 Faol</span>';
+    var actionBtn = u.status === 'blocked'
+      ? '<button class="sa-btn sa-btn-success" onclick="toggleStatus(' + u.id + ',\'active\')">✅ Faollashtirish</button>'
+      : '<button class="sa-btn sa-btn-danger" onclick="toggleStatus(' + u.id + ',\'blocked\')">🚫 Bloklash</button>';
+    var safeName = (u.name || '').replace(/'/g, "\\'");
+    return '<tr><td style="color:rgba(255,255,255,.3)">' + (i+1) + '</td><td><b>' + u.name + '</b></td><td style="font-size:12px;color:rgba(255,255,255,.5)">' + (u.email||'—') + '</td><td style="font-size:12px;color:rgba(255,255,255,.6)">' + (u.position||'—') + '</td><td><span class="role-badge ' + (rM[u.role]||'') + '">' + (rL[u.role]||u.role) + '</span></td><td>' + statusHtml + '</td><td><div style="display:flex;gap:6px;flex-wrap:wrap"><button class="sa-btn sa-btn-primary" onclick="openResetModal(' + u.id + ',\'' + safeName + '\')">🔑 Parol</button>' + actionBtn + '</div></td></tr>';
+  }).join('') || '<tr><td colspan="7" style="text-align:center;color:rgba(255,255,255,.3);padding:30px">Foydalanuvchilar yo\'q</td></tr>';
+}
+
+function filterUsers(q) {
+  var filtered = allUsers.filter(function(u){ return (u.name||'').toLowerCase().includes(q.toLowerCase()) || (u.email||'').toLowerCase().includes(q.toLowerCase()); });
+  renderUsers(filtered);
+}
+
+function openResetModal(id, name) {
+  document.getElementById('resetUserId').value = id;
+  document.getElementById('resetUserName').textContent = 'Foydalanuvchi: ' + name;
+  document.getElementById('newPasswordInput').value = '';
+  document.getElementById('resetModal').classList.add('open');
+  setTimeout(function(){ document.getElementById('newPasswordInput').focus(); }, 100);
+}
+function closeResetModal(){ document.getElementById('resetModal').classList.remove('open'); }
+
+async function doResetPassword() {
+  var id = document.getElementById('resetUserId').value;
+  var pw = document.getElementById('newPasswordInput').value;
+  if(!pw || pw.length < 6){ saToast('Parol kamida 6 ta belgi bo\'lishi kerak!', 'error'); return; }
+  try {
+    await saFetch('/users/' + id + '/reset-password', 'PUT', {newPassword: pw});
+    saToast('Parol muvaffaqiyatli yangilandi!', 'success');
+    closeResetModal();
+  } catch(e){ saToast('Xatolik: ' + e.message, 'error'); }
+}
+
+async function toggleStatus(id, status) {
+  var label = status === 'blocked' ? 'bloklash' : 'faollashtirish';
+  if(!confirm('Foydalanuvchini ' + label + 'ni tasdiqlaysizmi?')) return;
+  try {
+    await saFetch('/users/' + id + '/status', 'PUT', {status: status});
+    saToast('Holat yangilandi', 'success');
+    loadUsers();
+  } catch(e){ saToast('Xatolik: ' + e.message, 'error'); }
+}
+
+async function loadLogs() {
+  try {
+    var logs = await saFetch('/logs?limit=150');
+    var aC = {create:'action-create',update:'action-update',delete:'action-delete',approve:'action-approve',reject:'action-reject',upload:'action-upload'};
+    var aL = {create:'Yaratdi',update:'Yangiladi',delete:'O\'chirdi',approve:'Tasdiqladi',reject:'Rad etdi',upload:'Yukladi',login:'Kirdi'};
+    document.getElementById('logsTableBody').innerHTML = logs.map(function(l){
+      var d = l.created_at ? new Date(l.created_at).toLocaleString('uz-UZ') : '—';
+      return '<tr><td style="white-space:nowrap;color:rgba(255,255,255,.4);font-size:12px">' + d + '</td><td><b>' + (l.user_name||'—') + '</b></td><td><span class="' + (aC[l.action]||'') + '">' + (aL[l.action]||l.action) + '</span></td><td style="font-size:12px;color:rgba(255,255,255,.6)">' + (l.description||'—') + '</td></tr>';
+    }).join('') || '<tr><td colspan="4" style="text-align:center;color:rgba(255,255,255,.3);padding:30px">Journal bo\'sh</td></tr>';
+  } catch(e){ saToast('Loglarni yuklashda xato: ' + e.message, 'error'); }
+}
+
+async function loadSettings() {
+  try {
+    var s = await saFetch('/settings');
+    document.getElementById('tgBotToken').value = s.telegram_bot_token || '';
+    document.getElementById('tgChatId').value   = s.telegram_chat_id   || '';
+  } catch(e){ saToast('Sozlamalarni yuklashda xato: ' + e.message, 'error'); }
+}
+
+async function saveTgSettings() {
+  var botToken = document.getElementById('tgBotToken').value.trim();
+  var chatId   = document.getElementById('tgChatId').value.trim();
+  try {
+    await saFetch('/settings', 'POST', {botToken: botToken, chatId: chatId, enabled: true});
+    saToast('Telegram sozlamalari saqlandi!', 'success');
+  } catch(e){ saToast('Xatolik: ' + e.message, 'error'); }
+}
+
+async function testTg() {
+  var botToken = document.getElementById('tgBotToken').value.trim();
+  var chatId   = document.getElementById('tgChatId').value.trim();
+  if(!botToken || !chatId){ saToast('Token va Chat ID kiriting!', 'error'); return; }
+  saToast('Bot test qilinmoqda...', 'info');
+  try {
+    var res = await saFetch('/telegram/test', 'POST', {botToken: botToken, chatId: chatId});
+    if(res.success) saToast('Test xabari yuborildi!', 'success');
+    else saToast('Bot xatosi: ' + (res.error||'Noma\'lum'), 'error');
+  } catch(e){ saToast('Xatolik: ' + e.message, 'error'); }
+}
+
+(function init(){
+  if(getToken()) showDashboard();
+  document.getElementById('resetModal').addEventListener('click', function(e){ if(e.target===this) closeResetModal(); });
+})();
+</script>
+</body>
+</html>

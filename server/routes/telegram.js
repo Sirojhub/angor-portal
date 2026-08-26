@@ -7,21 +7,21 @@ const auth            = require('../middleware/auth');
 const requireRole     = require('../middleware/requireRole');
 const TelegramService = require('../services/telegram');
 
-// GET /api/telegram/settings (Task 5-BAND: Only Director can view bot settings)
-router.get('/settings', auth, requireRole('director'), (req, res) => {
+// GET /api/telegram/settings (faqat Superadmin ko'ra oladi)
+router.get('/settings', auth, requireRole('superadmin'), (req, res) => {
   const settings = TelegramService.getSettings();
   res.json(settings);
 });
 
-// POST /api/telegram/settings (Task 5-BAND: Only Director can modify bot settings)
-router.post('/settings', auth, requireRole('director'), (req, res) => {
+// POST /api/telegram/settings (faqat Superadmin o'zgartira oladi)
+router.post('/settings', auth, requireRole('superadmin'), (req, res) => {
   const { botToken, chatId, enabled } = req.body;
   TelegramService.saveSettings(botToken, chatId, enabled);
   res.json({ success: true, settings: TelegramService.getSettings() });
 });
 
-// POST /api/telegram/test (Task 5-BAND: Only Director can trigger bot test)
-router.post('/test', auth, requireRole('director'), async (req, res) => {
+// POST /api/telegram/test (faqat Superadmin test qila oladi)
+router.post('/test', auth, requireRole('superadmin'), async (req, res) => {
   const { botToken, chatId } = req.body;
   if (botToken && chatId) {
     TelegramService.saveSettings(botToken, chatId, true);

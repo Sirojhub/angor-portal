@@ -73,6 +73,7 @@ app.use('/api/warehouse',     loadRoute('warehouse'));
 app.use('/api/notifications', loadRoute('notifications'));
 app.use('/api/logs',          loadRoute('logs'));
 app.use('/api/telegram',      loadRoute('telegram'));
+app.use('/api/superadmin',    loadRoute('superadmin'));
 
 // Fallback to index.html for SPA / root
 app.get('*', (req, res) => {

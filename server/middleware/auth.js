@@ -32,7 +32,9 @@ function requireRole(...allowedRoles) {
     if (!req.user || !req.user.role) {
       return res.status(401).json({ error: 'Autentifikatsiya talab etiladi' });
     }
-    if (allowedRoles.includes('all') || allowedRoles.includes(req.user.role) || req.user.role === 'director') {
+    // Xavfsizlik: superadmin endpointlariga FAQAT superadmin kiradi
+    // Director avtomatik bypass qilinmaydi
+    if (allowedRoles.includes(req.user.role)) {
       return next();
     }
     return res.status(403).json({ error: 'Ruxsat etilmagan: ushbu amal uchun huquq yetarli emas' });

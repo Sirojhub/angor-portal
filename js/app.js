@@ -2190,15 +2190,11 @@ async function renderLogs(){
 }
 
 // ============================================================
+// ============================================================
 // SOZLAMALAR
 // ============================================================
 async function renderSettings(){
   const s = DB.get(DB.KEYS.SETTINGS) || {};
-  let tg = { botToken: '', chatId: '', enabled: true };
-  try {
-    const res = await API.request('telegram/settings');
-    if (res) tg = res;
-  } catch (e) {}
 
   document.getElementById('settingsContent').innerHTML = `
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
@@ -2212,73 +2208,29 @@ async function renderSettings(){
         <button class="btn btn-primary" onclick="showToast('Sozlamalar saqlandi!','success')">💾 Saqlash</button>
       </div>
 
-      <div style="display:flex;flex-direction:column;gap:16px">
-        <div class="card card-body">
-          <div class="card-title mb-16">🤖 Telegram Bot Integratsiyasi (Tashkilot Asosiy Kanali)</div>
-          <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px">Umumiy tizim bot tokeni va tashkilotning rasmiy bildirishnomalar kanali/guruhi.</p>
-          <div class="form-group">
-            <label class="form-label">BOT TOKEN</label>
-            <input type="text" class="form-control" id="tgToken" value="${tg.botToken || ''}" placeholder="7512345678:AAH1234567890...">
-          </div>
-          <div class="form-group">
-            <label class="form-label">📢 TASHKILOT UMUMIY KANAL / GURUH CHAT ID</label>
-            <input type="text" class="form-control" id="tgChatId" value="${tg.chatId || ''}" placeholder="-1001234567890">
-            <div style="font-size:11px;color:var(--primary);margin-top:6px;background:rgba(37,99,235,0.08);padding:8px 12px;border-radius:6px;line-height:1.4">
-              💡 <b>Eslatma:</b> Bu butun tashkilot uchun umumiy bot kanali. Har bir xodimning shaxsiy Chat ID si <b>"Mening profillim"</b> sahifasida alohida o'rnatiladi!
-            </div>
-          </div>
-          <div style="display:flex;gap:8px;margin-top:12px">
-            <button class="btn btn-primary" onclick="saveTelegramSettings()">💾 Saqlash</button>
-            <button class="btn btn-accent" onclick="testTelegramBot()">🤖 Botni sinash</button>
-          </div>
+      <div class="card card-body">
+        <div class="card-title mb-16">🔒 Xavfsizlik va tizim</div>
+        <div style="background:var(--bg);border-radius:10px;padding:12px;margin-bottom:10px">
+          <div style="font-weight:600;font-size:13px;margin-bottom:2px">Sessiya muddati</div>
+          <div style="font-size:12px;color:var(--text-muted)">Foydalanuvchilar 8 soat faol bo'lmasa avtomatik chiqariladi</div>
         </div>
-
-        <div class="card card-body">
-          <div class="card-title mb-16">🔒 Xavfsizlik</div>
-          <div style="background:var(--bg);border-radius:10px;padding:12px;margin-bottom:10px">
-            <div style="font-weight:600;font-size:13px;margin-bottom:2px">Sessiya muddati</div>
-            <div style="font-size:12px;color:var(--text-muted)">Foydalanuvchilar 8 soat faol bo'lmasa avtomatik chiqariladi</div>
-          </div>
-          <div style="background:var(--bg);border-radius:10px;padding:12px">
-            <div style="font-weight:600;font-size:13px;margin-bottom:2px">Versiya</div>
-            <div style="font-size:12px;color:var(--text-muted)">Angor Agro Star Portal v1.0 · 2026</div>
-          </div>
+        <div style="background:var(--bg);border-radius:10px;padding:12px;margin-bottom:10px">
+          <div style="font-weight:600;font-size:13px;margin-bottom:2px">Versiya</div>
+          <div style="font-size:12px;color:var(--text-muted)">Angor Agro Star Portal v1.0 · 2026</div>
+        </div>
+        <div style="background:rgba(200,146,42,0.08);border:1px solid rgba(200,146,42,0.2);border-radius:10px;padding:12px">
+          <div style="font-weight:600;font-size:13px;margin-bottom:4px">🤖 Telegram Bot Integratsiyasi</div>
+          <div style="font-size:12px;color:var(--text-muted)">Telegram Bot Token va kanal sozlamalari tizim administratori tomonidan boshqariladi.</div>
         </div>
       </div>
     </div>
   `;
 }
 
-async function saveTelegramSettings() {
-  const token = document.getElementById('tgToken').value.trim();
-  const chatId = document.getElementById('tgChatId').value.trim();
-  showToast('Telegram sozlamalari saqlanmoqda...', 'info');
 
-  const res = await API.request('telegram/settings', 'POST', { botToken: token, chatId, enabled: true });
-  if (res && res.success) {
-    showToast('Telegram Bot sozlamalari muvaffaqiyatli saqlandi!', 'success');
-  } else {
-    showToast('Sozlamalarni saqlashda xatolik', 'error');
-  }
-}
+// saveTelegramSettings va testTelegramBot funksiyalari
+// faqat superadmin panelida mavjud (superadmin.html)
 
-async function testTelegramBot() {
-  const token = document.getElementById('tgToken').value.trim();
-  const chatId = document.getElementById('tgChatId').value.trim();
-  if (!token || !chatId) {
-    showToast('Iltimos, Bot Token va Chat ID larni kiriting!', 'error');
-    return;
-  }
-  showToast('Telegram Bot testi yuborilmoqda...', 'info');
-
-  const res = await API.request('telegram/test', 'POST', { botToken: token, chatId });
-  if (res && res.success) {
-    showToast('✅ Test xabari Telegramingizga muvaffaqiyatli yuborildi!', 'success');
-  } else {
-    const detail = (res && res.result && res.result.description) ? res.result.description : (res && res.result && res.result.error) ? res.result.error : 'Token yoki Chat ID ni tekshiring';
-    showToast('⚠️ Telegram Xatosi: ' + detail, 'warning', 7000);
-  }
-}
 
 // ============================================================
 // BILDIRISHNOMALAR
