@@ -1002,7 +1002,8 @@ function renderDocs(){
       (d.title||'').toLowerCase().includes(search) ||
       (d.description||'').toLowerCase().includes(search) ||
       (d.uploadedName||'').toLowerCase().includes(search) ||
-      (catLabels[d.category]||d.category||'').toLowerCase().includes(search)
+      (catLabels[d.category]||d.category||'').toLowerCase().includes(search) ||
+      (d.doc_number||'').toLowerCase().includes(search)
     );
   }
   const user=document.getElementById('docFilterUser')?.value;
@@ -1034,6 +1035,7 @@ function renderDocs(){
           <div style="display:flex;align-items:center;gap:8px">
             <span style="font-size:20px">${(['JPG','PNG','JPEG','GIF','WEBP'].includes((d.fileType||'').toUpperCase())) ? '🖼️' : (ftIcons[d.fileType]||'📄')}</span>
             <div>
+              ${d.doc_number ? `<div style="font-size:11px;color:var(--primary);font-weight:700;font-family:monospace;margin-bottom:2px">№ ${d.doc_number}</div>` : ''}
               <div style="font-weight:500">${d.title}</div>
               ${d.description?`<div style="font-size:11px;color:var(--text-light)">${d.description}</div>`:''}
               ${d.target_user_name || d.targetUserName ? `<div style="margin-top:2px"><span style="font-size:10px;background:#e0f2fe;color:#0369a1;padding:1px 6px;border-radius:4px;font-weight:600">🎯 Mas'ul: ${d.target_user_name || d.targetUserName}</span></div>` : ''}

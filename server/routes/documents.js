@@ -63,6 +63,18 @@ function formatFileSize(bytes) {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
 }
 
+function generateDocNumber(database) {
+  const year = new Date().getFullYear();
+  const allDocs = database.prepare('SELECT * FROM documents ORDER BY upload_date DESC').all();
+  const thisYearDocs = allDocs.filter(d => d.doc_number && d.doc_number.startsWith(`${year}-`));
+  const maxNum = thisYearDocs.reduce((max, d) => {
+    const num = parseInt((d.doc_number || '').split('-')[1], 10);
+    return isNaN(num) ? max : Math.max(max, num);
+  }, 0);
+  const nextNum = String(maxNum + 1).padStart(3, '0');
+  return `${year}-${nextNum}`;
+}
+
 function getFileTypeExt(filename, mimeType = '') {
   const ext = path.extname(filename).toUpperCase().replace('.', '');
   if (['PNG','JPG','JPEG','GIF','WEBP'].includes(ext)) return ext;
@@ -226,9 +238,11 @@ router.post('/', auth, (req, res, next) => {
     } catch (e) {}
   }
 
+  const docNumber = generateDocNumber(db);
+
   const result = db.prepare(`
-    INSERT INTO documents (title, category, version, file_type, file_size, file_path, uploaded_by, uploaded_name, upload_date, status, description, target_user_id, target_user_name, reply_to_id, task_id)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, date('now'), 'active', ?, ?, ?, ?, ?)
+    INSERT INTO documents (title, category, version, file_type, file_size, file_path, uploaded_by, uploaded_name, upload_date, status, description, target_user_id, target_user_name, reply_to_id, task_id, doc_number)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, date('now'), 'active', ?, ?, ?, ?, ?, ?)
   `).run(
     title,
     category,
@@ -242,7 +256,8 @@ router.post('/', auth, (req, res, next) => {
     targetId,
     target_user_name || null,
     replyId,
-    taskId
+    taskId,
+    docNumber
   );
 
   db.prepare(`INSERT INTO activity_logs (user_id, user_name, action, model, model_id, description) VALUES (?,?,?,?,?,?)`).run(

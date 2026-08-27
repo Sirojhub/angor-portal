@@ -256,7 +256,8 @@ class DatabaseEngine {
             file_path: args[5], uploaded_by: parseInt(args[6]), uploaded_name: args[7],
             upload_date: new Date().toISOString().slice(0,10), status: 'active', description: args[8] || '',
             target_user_id: args[9] ? parseInt(args[9]) : null, target_user_name: args[10] || null,
-            reply_to_id: args[11] ? parseInt(args[11]) : null, task_id: args[12] ? parseInt(args[12]) : null
+            reply_to_id: args[11] ? parseInt(args[11]) : null, task_id: args[12] ? parseInt(args[12]) : null,
+            doc_number: args[13] || null
           };
           d.id = db.nextId('documents');
           d.created_at = new Date().toISOString();

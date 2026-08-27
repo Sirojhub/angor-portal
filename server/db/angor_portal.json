@@ -20,7 +20,7 @@
     {
       "name": "Sirojiddin Faxriddinovich",
       "email": "sirojiddin1997tmi@gmail.com",
-      "password": "$2a$10$xvVEA9f.beP9cKLCwi.xyexpC.02Jmi0K/tAaukjO/2.Mu90EUkA2",
+      "password": "$2a$10$f/fhettUUcQONenPqLq3RugJAaEksJmhbsFsfB83e.b/VZLNl/SIa",
       "role": "employee",
       "position": "Bosh agronom",
       "department": "Ishlab chiqarish",
@@ -32,7 +32,10 @@
       "status": "active",
       "id": 6,
       "created_at": "2026-08-21T06:38:33.081Z",
-      "updated_at": "2026-08-24T08:43:06.934Z"
+      "updated_at": "2026-08-26T07:45:43.930Z",
+      "reset_code": null,
+      "reset_expires": null,
+      "reset_used": null
     }
   ],
   "tasks": [
