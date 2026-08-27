@@ -105,7 +105,7 @@ function canAccessDocument(doc, user) {
 
 // GET /api/documents (Task 2.2: Filtered by user access rights)
 router.get('/', auth, (req, res) => {
-  const { category, task_id } = req.query;
+  const { category, task_id, client_id } = req.query;
   let docs = db.prepare('SELECT * FROM documents ORDER BY upload_date DESC').all();
 
   // Filter documents so confidential target_user_id documents remain hidden
@@ -116,6 +116,9 @@ router.get('/', auth, (req, res) => {
   }
   if (task_id) {
     docs = docs.filter(d => d.task_id === parseInt(task_id) || d.taskId === parseInt(task_id));
+  }
+  if (client_id) {
+    docs = docs.filter(d => d.client_id === parseInt(client_id));
   }
   res.json(docs);
 });
@@ -202,7 +205,7 @@ router.post('/', auth, (req, res, next) => {
     next();
   });
 }, async (req, res) => {
-  const { title, category, version, description, target_user_id, target_user_name, reply_to_id, task_id } = req.body;
+  const { title, category, version, description, target_user_id, target_user_name, reply_to_id, task_id, client_id } = req.body;
 
   if (!title || !category) {
     return res.status(400).json({ error: 'Sarlavha va kategoriya kiritilishi shart' });
@@ -240,9 +243,16 @@ router.post('/', auth, (req, res, next) => {
 
   const docNumber = generateDocNumber(db);
 
+  const clientId = client_id ? parseInt(client_id) : null;
+  let clientName = null;
+  if (clientId) {
+    const clientRow = db.prepare('SELECT name FROM clients WHERE id = ?').get(clientId);
+    clientName = clientRow ? clientRow.name : null;
+  }
+
   const result = db.prepare(`
-    INSERT INTO documents (title, category, version, file_type, file_size, file_path, uploaded_by, uploaded_name, upload_date, status, description, target_user_id, target_user_name, reply_to_id, task_id, doc_number)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, date('now'), 'active', ?, ?, ?, ?, ?, ?)
+    INSERT INTO documents (title, category, version, file_type, file_size, file_path, uploaded_by, uploaded_name, upload_date, status, description, target_user_id, target_user_name, reply_to_id, task_id, doc_number, client_id, client_name)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, date('now'), 'active', ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     title,
     category,
@@ -257,7 +267,9 @@ router.post('/', auth, (req, res, next) => {
     target_user_name || null,
     replyId,
     taskId,
-    docNumber
+    docNumber,
+    clientId,
+    clientName
   );
 
   db.prepare(`INSERT INTO activity_logs (user_id, user_name, action, model, model_id, description) VALUES (?,?,?,?,?,?)`).run(

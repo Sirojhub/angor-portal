@@ -979,6 +979,10 @@ function populateDocFilters(){
   const sel=document.getElementById('docFilterUser');
   if(sel.options.length>1)return;
   DB.get(DB.KEYS.USERS).forEach(u=>{ const o=document.createElement('option'); o.value=u.id; o.textContent=u.name; sel.appendChild(o); });
+  const csel=document.getElementById('docFilterClient');
+  if(csel && csel.options.length<=1){
+    (DB.get(DB.KEYS.CLIENTS)||[]).forEach(c=>{ const o=document.createElement('option'); o.value=c.id; o.textContent=c.name; csel.appendChild(o); });
+  }
 }
 
 function detectFileType(fileName) {
@@ -1003,11 +1007,15 @@ function renderDocs(){
       (d.description||'').toLowerCase().includes(search) ||
       (d.uploadedName||'').toLowerCase().includes(search) ||
       (catLabels[d.category]||d.category||'').toLowerCase().includes(search) ||
-      (d.doc_number||'').toLowerCase().includes(search)
+      (d.doc_number||'').toLowerCase().includes(search) ||
+      (d.client_name||'').toLowerCase().includes(search)
     );
   }
   const user=document.getElementById('docFilterUser')?.value;
   if(user) docs=docs.filter(d=>d.uploadedBy==user);
+
+  const clientFilter=document.getElementById('docFilterClient')?.value;
+  if(clientFilter) docs=docs.filter(d=>d.client_id==clientFilter);
 
   const dateFrom = document.getElementById('docDateFrom')?.value;
   const dateTo = document.getElementById('docDateTo')?.value;
@@ -1039,6 +1047,7 @@ function renderDocs(){
               <div style="font-weight:500">${d.title}</div>
               ${d.description?`<div style="font-size:11px;color:var(--text-light)">${d.description}</div>`:''}
               ${d.target_user_name || d.targetUserName ? `<div style="margin-top:2px"><span style="font-size:10px;background:#e0f2fe;color:#0369a1;padding:1px 6px;border-radius:4px;font-weight:600">🎯 Mas'ul: ${d.target_user_name || d.targetUserName}</span></div>` : ''}
+              ${d.client_name ? `<div style="margin-top:2px"><span style="font-size:10px;background:#fef3c7;color:#92400e;padding:1px 6px;border-radius:4px;font-weight:600">🏢 ${d.client_name}</span></div>` : ''}
             </div>
           </div>
         </td>
@@ -1073,6 +1082,13 @@ function openUploadModal(replyToId = null){
     const emps = DB.get(DB.KEYS.USERS);
     sel.innerHTML = '<option value="">— Barcha xodimlar uchun (Umumiy) —</option>' +
       emps.map(u => `<option value="${u.id}">${u.name} (${u.position||u.role})</option>`).join('');
+  }
+
+  const clientSel = document.getElementById('docClientId');
+  if (clientSel) {
+    const clients = DB.get(DB.KEYS.CLIENTS) || [];
+    clientSel.innerHTML = '<option value="">— Mijozga bog\'lanmagan —</option>' +
+      clients.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
   }
 
   window._docReplyToId = replyToId;
@@ -1121,6 +1137,8 @@ async function saveDocument(){
   if (window._docReplyToId) {
     formData.append('reply_to_id', window._docReplyToId);
   }
+  const clientId = document.getElementById('docClientId')?.value;
+  if (clientId) formData.append('client_id', clientId);
 
   let localFilePath = null;
   if (file) {

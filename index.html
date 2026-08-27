@@ -287,6 +287,9 @@
       <select class="filter-select" id="docFilterUser" onchange="renderDocs()">
         <option value="">Barcha xodimlar</option>
       </select>
+      <select class="filter-select" id="docFilterClient" onchange="renderDocs()" style="max-width:180px">
+        <option value="">Barcha mijozlar</option>
+      </select>
       <input type="date" class="form-control" id="docDateFrom" onchange="renderDocs()" style="max-width:150px" title="Boshlanish sanasi">
       <input type="date" class="form-control" id="docDateTo" onchange="renderDocs()" style="max-width:150px" title="Tugash sanasi">
       <select class="form-control" id="docSort" onchange="renderDocs()" style="max-width:180px">
@@ -1059,6 +1062,12 @@
         <label class="form-label">🎯 QABUL QILUVCHI MAS'UL XODIM (IXTIYORIY)</label>
         <select class="form-control" id="docTargetUser">
           <option value="">— Barcha xodimlar uchun (Umumiy) —</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">🏢 BOG'LIQ MIJOZ (IXTIYORIY)</label>
+        <select class="form-control" id="docClientId">
+          <option value="">— Mijozga bog'lanmagan —</option>
         </select>
       </div>
       <div class="form-group">
