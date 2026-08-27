@@ -103,8 +103,42 @@ function canAccessDocument(doc, user) {
   return false;
 }
 
+// v14: Hujjat muddati tugashiga yaqinlashganda director(lar)ga bildirishnoma yuborish
+function checkExpiringDocuments(database) {
+  try {
+    const today = new Date();
+    const in30Days = new Date();
+    in30Days.setDate(today.getDate() + 30);
+
+    // Barcha director(lar) ID'sini ol
+    const directors = database.prepare('SELECT * FROM users').all().filter(u => u.role === 'director');
+    if (!directors.length) return;
+
+    const docs = database.prepare('SELECT * FROM documents').all().filter(d => d.expiry_date && !d.expiry_notified);
+
+    docs.forEach(doc => {
+      const expiry = new Date(doc.expiry_date);
+      if (expiry <= in30Days && expiry >= today) {
+        const daysLeft = Math.ceil((expiry - today) / (1000 * 60 * 60 * 24));
+        directors.forEach(director => {
+          database.prepare(`INSERT INTO notifications (user_id, title, message, type) VALUES (?,?,?,?)`).run(
+            director.id,
+            'Hujjat muddati tugamoqda',
+            `⚠️ «${doc.title}» (№${doc.doc_number || '—'}) hujjatining amal qilish muddati ${daysLeft} kundan so'ng tugaydi.`,
+            'warning'
+          );
+        });
+        database.prepare('UPDATE documents SET expiry_notified = ? WHERE id = ?').run(true, doc.id);
+      }
+    });
+  } catch (e) {
+    console.warn('[checkExpiry] Xatolik:', e.message);
+  }
+}
+
 // GET /api/documents (Task 2.2: Filtered by user access rights)
 router.get('/', auth, (req, res) => {
+  checkExpiringDocuments(db);
   const { category, task_id, client_id } = req.query;
   let docs = db.prepare('SELECT * FROM documents ORDER BY upload_date DESC').all();
 
@@ -205,7 +239,8 @@ router.post('/', auth, (req, res, next) => {
     next();
   });
 }, async (req, res) => {
-  const { title, category, version, description, target_user_id, target_user_name, reply_to_id, task_id, client_id } = req.body;
+  const { title, category, version, description, target_user_id, target_user_name, reply_to_id, task_id, client_id, expiry_date } = req.body;
+  const expiryDate = expiry_date || null;
 
   if (!title || !category) {
     return res.status(400).json({ error: 'Sarlavha va kategoriya kiritilishi shart' });
@@ -251,8 +286,8 @@ router.post('/', auth, (req, res, next) => {
   }
 
   const result = db.prepare(`
-    INSERT INTO documents (title, category, version, file_type, file_size, file_path, uploaded_by, uploaded_name, upload_date, status, description, target_user_id, target_user_name, reply_to_id, task_id, doc_number, client_id, client_name)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, date('now'), 'active', ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO documents (title, category, version, file_type, file_size, file_path, uploaded_by, uploaded_name, upload_date, status, description, target_user_id, target_user_name, reply_to_id, task_id, doc_number, client_id, client_name, expiry_date)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, date('now'), 'active', ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     title,
     category,
@@ -269,7 +304,8 @@ router.post('/', auth, (req, res, next) => {
     taskId,
     docNumber,
     clientId,
-    clientName
+    clientName,
+    expiryDate
   );
 
   db.prepare(`INSERT INTO activity_logs (user_id, user_name, action, model, model_id, description) VALUES (?,?,?,?,?,?)`).run(

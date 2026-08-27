@@ -258,7 +258,8 @@ class DatabaseEngine {
             target_user_id: args[9] ? parseInt(args[9]) : null, target_user_name: args[10] || null,
             reply_to_id: args[11] ? parseInt(args[11]) : null, task_id: args[12] ? parseInt(args[12]) : null,
             doc_number: args[13] || null,
-            client_id: args[14] ? parseInt(args[14]) : null, client_name: args[15] || null
+            client_id: args[14] ? parseInt(args[14]) : null, client_name: args[15] || null,
+            expiry_date: args[16] || null, expiry_notified: false
           };
           d.id = db.nextId('documents');
           d.created_at = new Date().toISOString();
@@ -418,6 +419,17 @@ class DatabaseEngine {
             db.data.notifications.forEach(n => { if (n.user_id === userId) n.is_read = 1; });
           }
           db.save();
+          return {};
+        }
+
+        // UPDATE documents SET expiry_notified
+        if (/UPDATE documents SET expiry_notified/i.test(cleanSql)) {
+          const id = parseInt(args[1]);
+          const doc = db.data.documents.find(d => d.id === id);
+          if (doc) {
+            doc.expiry_notified = args[0] ? true : false;
+            db.save();
+          }
           return {};
         }
 

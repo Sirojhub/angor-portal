@@ -1048,6 +1048,12 @@ function renderDocs(){
               ${d.description?`<div style="font-size:11px;color:var(--text-light)">${d.description}</div>`:''}
               ${d.target_user_name || d.targetUserName ? `<div style="margin-top:2px"><span style="font-size:10px;background:#e0f2fe;color:#0369a1;padding:1px 6px;border-radius:4px;font-weight:600">🎯 Mas'ul: ${d.target_user_name || d.targetUserName}</span></div>` : ''}
               ${d.client_name ? `<div style="margin-top:2px"><span style="font-size:10px;background:#fef3c7;color:#92400e;padding:1px 6px;border-radius:4px;font-weight:600">🏢 ${d.client_name}</span></div>` : ''}
+              ${d.expiry_date ? (()=>{
+                const daysLeft=Math.ceil((new Date(d.expiry_date)-new Date())/(1000*60*60*24));
+                if(daysLeft<0) return `<div style="margin-top:2px"><span style="font-size:10px;background:#fee2e2;color:#991b1b;padding:1px 6px;border-radius:4px;font-weight:700">⛔ Muddati o'tgan (${fmtDate(d.expiry_date)})</span></div>`;
+                if(daysLeft<=30) return `<div style="margin-top:2px"><span style="font-size:10px;background:#fef3c7;color:#92400e;padding:1px 6px;border-radius:4px;font-weight:700">⏳ ${daysLeft} kun qoldi (${fmtDate(d.expiry_date)})</span></div>`;
+                return `<div style="margin-top:2px;font-size:10px;color:var(--text-muted)">📅 Muddat: ${fmtDate(d.expiry_date)}</div>`;
+              })() : ''}
             </div>
           </div>
         </td>
@@ -1076,6 +1082,8 @@ function openUploadModal(replyToId = null){
   document.getElementById('fileSelected').style.display='none';
   const fileInp = document.getElementById('fileInput');
   if (fileInp) fileInp.value = '';
+  const expiryInp = document.getElementById('docExpiryDate');
+  if (expiryInp) expiryInp.value = '';
 
   const sel = document.getElementById('docTargetUser');
   if (sel) {
@@ -1139,6 +1147,8 @@ async function saveDocument(){
   }
   const clientId = document.getElementById('docClientId')?.value;
   if (clientId) formData.append('client_id', clientId);
+  const expiryDate = document.getElementById('docExpiryDate')?.value;
+  if (expiryDate) formData.append('expiry_date', expiryDate);
 
   let localFilePath = null;
   if (file) {
