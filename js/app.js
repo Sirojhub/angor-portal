@@ -981,15 +981,49 @@ function populateDocFilters(){
   DB.get(DB.KEYS.USERS).forEach(u=>{ const o=document.createElement('option'); o.value=u.id; o.textContent=u.name; sel.appendChild(o); });
 }
 
+function detectFileType(fileName) {
+  const ext = (fileName.split('.').pop() || '').toUpperCase();
+  if (['JPG','JPEG','PNG','GIF','WEBP'].includes(ext)) return ext === 'JPEG' ? 'JPG' : ext;
+  if (['XLSX','XLS'].includes(ext)) return 'XLSX';
+  if (['DOCX','DOC'].includes(ext)) return 'DOCX';
+  if (ext === 'PDF') return 'PDF';
+  return ext || 'FAYL';
+}
+
 function renderDocs(){
   let docs=DB.get(DB.KEYS.DOCS);
   if(docTab!=='all') docs=docs.filter(d=>d.category===docTab);
-  const search=document.getElementById('docSearch')?.value.toLowerCase();
-  if(search) docs=docs.filter(d=>d.title.toLowerCase().includes(search));
+
+  const catLabels={shartnoma:'Shartnoma',moliyaviy:'Moliyaviy',dala_jurnali:'Dala jurnali',buyruq:'Buyruq',sertifikat:'Sertifikat',laboratoriya:'Laboratoriya'};
+
+  const search=document.getElementById('docSearch')?.value.toLowerCase().trim();
+  if(search) {
+    docs=docs.filter(d =>
+      (d.title||'').toLowerCase().includes(search) ||
+      (d.description||'').toLowerCase().includes(search) ||
+      (d.uploadedName||'').toLowerCase().includes(search) ||
+      (catLabels[d.category]||d.category||'').toLowerCase().includes(search)
+    );
+  }
   const user=document.getElementById('docFilterUser')?.value;
   if(user) docs=docs.filter(d=>d.uploadedBy==user);
 
-  const catLabels={shartnoma:'Shartnoma',moliyaviy:'Moliyaviy',dala_jurnali:'Dala jurnali',buyruq:'Buyruq',sertifikat:'Sertifikat',laboratoriya:'Laboratoriya'};
+  const dateFrom = document.getElementById('docDateFrom')?.value;
+  const dateTo = document.getElementById('docDateTo')?.value;
+  if (dateFrom) docs = docs.filter(d => (d.uploadDate||'') >= dateFrom);
+  if (dateTo) docs = docs.filter(d => (d.uploadDate||'') <= dateTo);
+
+  const sortBy = document.getElementById('docSort')?.value || 'date_desc';
+  docs = [...docs].sort((a, b) => {
+    switch (sortBy) {
+      case 'date_asc': return new Date(a.uploadDate) - new Date(b.uploadDate);
+      case 'title_asc': return (a.title||'').localeCompare(b.title||'');
+      case 'title_desc': return (b.title||'').localeCompare(a.title||'');
+      case 'date_desc':
+      default: return new Date(b.uploadDate) - new Date(a.uploadDate);
+    }
+  });
+
   const ftIcons={PDF:'📕',XLSX:'📗',DOCX:'📘',JPG:'🖼️'};
   const statusLabels={active:'Amalda',pending:'Kutilmoqda',expired:'Eskirgan'};
   const statusClass={active:'status-active',pending:'status-progress',expired:'status-overdue'};
@@ -1066,7 +1100,7 @@ async function saveDocument(){
   const fileInput = document.getElementById('fileInput');
   const file = fileInput.files ? fileInput.files[0] : null;
   const category = document.getElementById('docCategory').value;
-  const fileType = document.getElementById('docFileType').value;
+  const fileType = file ? detectFileType(file.name) : 'FAYL';
   const description = document.getElementById('docDesc').value;
 
   const targetId = document.getElementById('docTargetUser')?.value;

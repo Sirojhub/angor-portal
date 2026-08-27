@@ -282,10 +282,18 @@
     <div class="filters-bar">
       <div class="search-box" style="max-width:320px">
         <span class="icon">🔍</span>
-        <input type="text" placeholder="Hujjat qidirish..." id="docSearch" oninput="renderDocs()">
+        <input type="text" placeholder="Nomi, tavsifi yoki kim yuklagani bo'yicha qidirish..." id="docSearch" oninput="renderDocs()">
       </div>
       <select class="filter-select" id="docFilterUser" onchange="renderDocs()">
         <option value="">Barcha xodimlar</option>
+      </select>
+      <input type="date" class="form-control" id="docDateFrom" onchange="renderDocs()" style="max-width:150px" title="Boshlanish sanasi">
+      <input type="date" class="form-control" id="docDateTo" onchange="renderDocs()" style="max-width:150px" title="Tugash sanasi">
+      <select class="form-control" id="docSort" onchange="renderDocs()" style="max-width:180px">
+        <option value="date_desc">📅 Sana: Yangi → Eski</option>
+        <option value="date_asc">📅 Sana: Eski → Yangi</option>
+        <option value="title_asc">🔤 Nomi: A → Z</option>
+        <option value="title_desc">🔤 Nomi: Z → A</option>
       </select>
     </div>
 
@@ -1044,15 +1052,6 @@
             <option value="buyruq">Buyruq</option>
             <option value="sertifikat">Sertifikat</option>
             <option value="laboratoriya">Laboratoriya</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label class="form-label">FAYL TURI</label>
-          <select class="form-control" id="docFileType">
-            <option value="PDF">PDF</option>
-            <option value="XLSX">XLSX</option>
-            <option value="DOCX">DOCX</option>
-            <option value="JPG">JPG / PNG (Rasm)</option>
           </select>
         </div>
       </div>
