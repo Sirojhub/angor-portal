@@ -25,6 +25,47 @@ function normalizeTask(t) {
   };
 }
 
+function normalizeDoc(d) {
+  if (!d) return d;
+  const uploadedBy = d.uploadedBy ?? d.uploaded_by;
+  const uploadedName = d.uploadedName ?? d.uploaded_name ?? '—';
+  const uploadDate = d.uploadDate ?? d.upload_date ?? '';
+  const fileType = d.fileType ?? d.file_type ?? 'PDF';
+  const fileSize = d.fileSize ?? d.file_size ?? '—';
+  const targetUserId = d.targetUserId ?? d.target_user_id ?? null;
+  const targetUserName = d.targetUserName ?? d.target_user_name ?? null;
+  const clientId = d.clientId ?? d.client_id ?? null;
+  const clientName = d.clientName ?? d.client_name ?? null;
+  const expiryDate = d.expiryDate ?? d.expiry_date ?? null;
+  const docNumber = d.docNumber ?? d.doc_number ?? null;
+
+  return {
+    ...d,
+    uploadedBy: uploadedBy !== undefined && uploadedBy !== null ? Number(uploadedBy) : null,
+    uploaded_by: uploadedBy !== undefined && uploadedBy !== null ? Number(uploadedBy) : null,
+    uploadedName,
+    uploaded_name: uploadedName,
+    uploadDate,
+    upload_date: uploadDate,
+    fileType,
+    file_type: fileType,
+    fileSize,
+    file_size: fileSize,
+    targetUserId: targetUserId !== undefined && targetUserId !== null ? Number(targetUserId) : null,
+    target_user_id: targetUserId !== undefined && targetUserId !== null ? Number(targetUserId) : null,
+    targetUserName,
+    target_user_name: targetUserName,
+    clientId: clientId !== undefined && clientId !== null ? Number(clientId) : null,
+    client_id: clientId !== undefined && clientId !== null ? Number(clientId) : null,
+    clientName,
+    client_name: clientName,
+    expiryDate,
+    expiry_date: expiryDate,
+    docNumber,
+    doc_number: docNumber
+  };
+}
+
 function updateTaskBadge() {
   const badge = document.getElementById('navBadgeTasks');
   if (!badge) return;
@@ -51,6 +92,37 @@ function updateTaskBadge() {
     }
   } else {
     badge.style.display = 'none';
+  }
+}
+
+function updateDocBadge() {
+  const badge = document.getElementById('navBadgeDocs');
+  if (!badge) return;
+  const u = Auth.currentUser;
+  if (!u) {
+    badge.style.display = 'none';
+    return;
+  }
+  const docs = (DB.get(DB.KEYS.DOCS) || []).map(normalizeDoc);
+  if (docs.length > 0) {
+    badge.textContent = docs.length;
+    badge.style.display = 'flex';
+    badge.className = 'nav-badge info';
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
+async function syncDocs() {
+  if (!Auth.currentUser || !window.API || !API.getDocs) return;
+  try {
+    const serverDocs = await API.getDocs('all');
+    if (Array.isArray(serverDocs)) {
+      const normalized = serverDocs.map(normalizeDoc);
+      DB.set(DB.KEYS.DOCS, normalized);
+    }
+  } catch (err) {
+    console.warn('[Sync Docs Error]:', err);
   }
 }
 
@@ -82,12 +154,30 @@ async function syncTasksAndNotifications() {
           DB.set(DB.KEYS.NOTIFS, normNotifs);
         }
       }
+      await syncDocs();
     }
   } catch (err) {
     console.warn('[Sync Error]:', err);
   }
   updateTaskBadge();
   updateNotifBadge();
+  updateDocBadge();
+
+  // Agar hozir Topshiriqlar bo'limi ochiq bo'lsa, ro'yxatni ham yangila
+  const tasksPage = document.getElementById('page-tasks') || document.getElementById('tasksPage');
+  if (typeof renderTasks === 'function' && tasksPage && (tasksPage.classList.contains('active') || tasksPage.style.display !== 'none')) {
+    renderTasks();
+    if (typeof buildTaskTabs === 'function') buildTaskTabs();
+  }
+
+  // Agar aynan bitta topshiriqning "ko'rish" oynasi ochiq bo'lsa, uni ham yangila
+  const viewModal = document.getElementById('taskViewModal');
+  if (viewModal && (viewModal.classList.contains('open') || viewModal.classList.contains('active')) && viewModal.dataset.taskId) {
+    const openTaskId = parseInt(viewModal.dataset.taskId);
+    if (openTaskId && typeof viewTask === 'function') {
+      viewTask(openTaskId);
+    }
+  }
 }
 
 // ============================================================
@@ -606,6 +696,7 @@ async function saveTask(){
 
     showToast(`Topshiriq ${allEmployees.length} ta xodimga yuborilmoqda...`, 'info');
 
+    let failedCount = 0;
     const results = await Promise.all(allEmployees.map(async emp => {
       const obj = {
         ...baseObj,
@@ -617,14 +708,18 @@ async function saveTask(){
         createdBy: Auth.currentUser.id
       };
       const res = await API.createTask(obj);
-      const created = (res && res.task) ? res.task : DB.create(DB.KEYS.TASKS, obj);
+      if (!res || res.success === false || !res.task) {
+        console.error(`[Broadcast Task] ${emp.name} uchun yaratib bo'lmadi:`, res);
+        failedCount++;
+        return null;
+      }
+      const created = res.task;
       const normCreated = normalizeTask(created);
       if (!DB.getOne(DB.KEYS.TASKS, normCreated.id)) {
         DB.create(DB.KEYS.TASKS, normCreated);
       } else {
         DB.update(DB.KEYS.TASKS, normCreated.id, normCreated);
       }
-      // Local notification
       DB.create(DB.KEYS.NOTIFS, {
         userId: emp.id, user_id: emp.id,
         title: 'Yangi topshiriq',
@@ -634,8 +729,15 @@ async function saveTask(){
       return normCreated;
     }));
 
-    logActivity('create','task', batchId, `Barcha ${allEmployees.length} ta xodimga topshiriq yuborildi: ${title}`);
-    showToast(`✅ Topshiriq ${allEmployees.length} ta xodimga yuborildi!`, 'success');
+    const successCount = results.filter(r => r !== null).length;
+    logActivity('create','task', batchId, `${successCount}/${allEmployees.length} ta xodimga topshiriq yuborildi: ${title}`);
+
+    if (failedCount > 0) {
+      showToast(`⚠️ ${successCount} ta xodimga yuborildi, ${failedCount} tasida xatolik yuz berdi. Ularga qayta yuborib ko'ring.`, 'warning');
+    } else {
+      showToast(`✅ Topshiriq ${successCount} ta xodimga yuborildi!`, 'success');
+    }
+
     // Reset checkbox
     document.getElementById('taskAssignAll').checked = false;
     const sg = document.getElementById('taskAssignedSingleGroup');
@@ -674,12 +776,20 @@ async function saveTask(){
   let taskId = id ? +id : null;
 
   if(id){
-    await API.updateTask(+id, obj);
+    const res = await API.updateTask(+id, obj);
+    if (!res || res.success === false) {
+      showToast('❌ Xatolik: ' + (res?.error || 'Topshiriqni yangilab bo\'lmadi.'), 'error');
+      return;
+    }
     DB.update(DB.KEYS.TASKS,+id,obj);
     logActivity('update','task',+id,'Topshiriq yangilandi: '+title);
   } else {
     const res = await API.createTask(obj);
-    const created = (res && res.task) ? res.task : DB.create(DB.KEYS.TASKS,obj);
+    if (!res || res.success === false || !res.task) {
+      showToast('❌ Xatolik: ' + (res?.error || 'Topshiriqni saqlab bo\'lmadi. Qayta urinib ko\'ring.'), 'error');
+      return;
+    }
+    const created = res.task;
     const normCreated = normalizeTask(created);
     if (!DB.getOne(DB.KEYS.TASKS, normCreated.id)) {
       DB.create(DB.KEYS.TASKS, normCreated);
@@ -744,6 +854,10 @@ async function saveTask(){
 function viewTask(id){
   const t=DB.getOne(DB.KEYS.TASKS,id);
   if(!t)return;
+  const viewModal = document.getElementById('taskViewModal');
+  if (viewModal) {
+    viewModal.dataset.taskId = id;
+  }
   const over=isOverdue(t.deadline)&&t.status!=='done';
   document.getElementById('taskViewTitle').textContent=t.title;
   document.getElementById('taskViewBody').innerHTML=`
@@ -893,19 +1007,29 @@ async function uploadTaskDocument(taskId) {
 function nextStatus(s){ return {new:'progress',progress:'review',review:'done',done:'done'}[s]; }
 
 async function changeStatus(id,status){
-  await API.updateTask(id, { status });
-  const updated = DB.update(DB.KEYS.TASKS,id,{status});
+  showToast('Saqlanmoqda...', 'info');
+  const res = await API.updateTask(id, { status });
+  if (!res || res.success === false) {
+    showToast('❌ Xatolik: ' + (res?.error || 'Server bilan bog\'lanib bo\'lmadi. Qayta urinib ko\'ring.'), 'error');
+    return;
+  }
+  DB.update(DB.KEYS.TASKS,id,{status});
   logActivity('update','task',id,'Topshiriq holati o\'zgartirildi: '+STATUS_MAP[status]);
-  showToast('Holat o\'zgartirildi: '+STATUS_MAP[status],'success');
+  showToast('✅ Holat o\'zgartirildi: '+STATUS_MAP[status],'success');
   renderTasks(); buildTaskTabs(); renderDashboard();
   updateTaskBadge();
 }
 
 async function approveTask(id){
-  await API.updateTask(id, { status: 'done' });
-  const updated = DB.update(DB.KEYS.TASKS,id,{status:'done'});
+  showToast('Tasdiqlanmoqda...', 'info');
+  const res = await API.updateTask(id, { status: 'done' });
+  if (!res || res.success === false) {
+    showToast('❌ Xatolik: ' + (res?.error || 'Server bilan bog\'lanib bo\'lmadi. Qayta urinib ko\'ring.'), 'error');
+    return;
+  }
+  DB.update(DB.KEYS.TASKS,id,{status:'done'});
   logActivity('approve','task',id,'Topshiriq tasdiqlandi');
-  showToast('Topshiriq tasdiqlandi va bildirishnoma yuborildi! 📲','success');
+  showToast('✅ Topshiriq tasdiqlandi va bildirishnoma yuborildi! 📲','success');
   renderTasks(); buildTaskTabs(); renderDashboard();
   updateTaskBadge();
 }
