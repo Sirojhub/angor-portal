@@ -38,6 +38,11 @@ router.post('/', auth, async (req, res) => {
     return res.status(400).json({ error: 'Majburiy maydonlar to\'ldirilmagan' });
   }
 
+  const todayStr = new Date().toISOString().split('T')[0];
+  if (deadline < todayStr) {
+    return res.status(400).json({ error: "Muddat bugungi sanadan oldingi bo'lishi mumkin emas" });
+  }
+
   const targetEmployee = db.prepare('SELECT id FROM users WHERE id = ?').get(assigned_to);
   if (!targetEmployee) {
     return res.status(400).json({ error: 'Ko\'rsatilgan xodim tizimda topilmadi' });
@@ -109,7 +114,7 @@ router.put('/:id', auth, async (req, res) => {
   // Assigned Employee can ONLY edit status (other fields are ignored)
   const fields = isDirectorOrManager 
     ? ['title','description','assigned_to','assigned_name','deadline','priority','category','status','review_comment']
-    : ['status'];
+    : ['status','employee_note'];
 
   const updates = [];
   const values  = [];
@@ -143,8 +148,9 @@ router.put('/:id', auth, async (req, res) => {
     // 1. Employee -> Director/Manager: When submitted for review
     if (newStatus === 'review') {
       const recipientId = task.created_by || 1; // Director
+      const noteText = req.body.employee_note ? `\nXodim izohi: ${req.body.employee_note}` : '';
       db.prepare(`INSERT INTO notifications (user_id, title, message, type) VALUES (?,?,?,?)`).run(
-        recipientId, 'Topshiriq bajarildi (Tasdiqlash kutilmoqda)', `👤 ${req.user.name} «${task.title}» topshirig'ini bajarib topshirdi`, 'warning'
+        recipientId, 'Topshiriq bajarildi (Tasdiqlash kutilmoqda)', `👤 ${req.user.name} «${task.title}» topshirig'ini bajarib topshirdi${noteText}`, 'warning'
       );
     }
     // 2. Director -> Employee: When approved (done)

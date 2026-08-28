@@ -1021,6 +1021,38 @@
   </div>
 </div>
 
+<!-- Topshiriqni Bajarib Topshirish Modal -->
+<div class="modal-overlay" id="submitTaskModal">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-header" style="border-bottom:1px solid rgba(59,130,246,0.3);background:rgba(59,130,246,0.05)">
+      <span class="modal-title" style="color:var(--primary)">📤 Ishni topshirish</span>
+      <div class="modal-close" onclick="closeModal('submitTaskModal')">×</div>
+    </div>
+    <div class="modal-body">
+      <div style="background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.2);border-radius:10px;padding:12px;margin-bottom:16px;font-size:13px;color:var(--text-muted)">
+        💡 Bajarilgan ish bo'yicha izoh qoldiring (ixtiyoriy). Ushbu izoh Direktorga topshiriq ko'rinishida ko'rsatiladi.
+      </div>
+      <div class="form-group">
+        <label class="form-label" style="color:var(--primary);font-weight:600">IZOH (IXTIYORIY)</label>
+        <textarea
+          class="form-control"
+          id="submitNoteInput"
+          rows="5"
+          placeholder="Izoh (ixtiyoriy) — Direktorga ko'rinadi..."
+          style="resize:vertical;min-height:120px"
+          data-task-id=""
+        ></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('submitTaskModal')">Bekor qilish</button>
+      <button class="btn btn-success" onclick="confirmSubmitTask()" style="gap:6px">
+        📤 Topshirish
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- Hujjat Ko'rish / Tasdiqlash -->
 <div class="modal-overlay" id="docViewModal">
   <div class="modal modal-lg">

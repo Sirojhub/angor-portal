@@ -559,7 +559,7 @@ function renderTasks(){
                 t.status==='new'
                   ? `<button class="btn btn-sm btn-primary" onclick="changeStatus(${t.id},'progress')">▶ Boshlash</button>`
                   : (t.status==='progress' || t.status==='rejected')
-                    ? `<button class="btn btn-sm btn-success" onclick="changeStatus(${t.id},'review')">📤 Topshirish</button>`
+                    ? `<button class="btn btn-sm btn-success" onclick="openSubmitTaskModal(${t.id})">📤 Topshirish</button>`
                     : t.status==='review'
                       ? `<span style="font-size:11px;color:var(--warning);font-weight:600">⏳ Tasdiqlash kutilmoqda</span>`
                       : t.status==='done'
@@ -638,6 +638,8 @@ function openNewTaskModal(){
   if (ag) ag.style.display = Auth.isDirector() ? '' : 'none';
   const fEl = document.getElementById('taskModalFile');
   if (fEl) fEl.value = '';
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('taskDeadline').setAttribute('min', today);
   openModal('taskModal');
 }
 
@@ -648,6 +650,7 @@ function editTask(id){
   document.getElementById('taskId').value=id;
   document.getElementById('taskTitle').value=t.title;
   document.getElementById('taskDesc').value=t.description||'';
+  document.getElementById('taskDeadline').removeAttribute('min');
   document.getElementById('taskDeadline').value=t.deadline;
   document.getElementById('taskPriority').value=t.priority;
   document.getElementById('taskCategory').value=t.category||'Ishlab chiqarish';
@@ -867,6 +870,12 @@ function viewTask(id){
         <div style="font-size:14px;line-height:1.6">${t.review_comment}</div>
       </div>
     ` : ''}
+    ${t.status === 'review' && t.employee_note ? `
+      <div style="background:rgba(59,130,246,0.08);border:1px solid var(--primary);border-radius:10px;padding:14px;margin-bottom:16px">
+        <div style="font-weight:600;color:var(--primary);margin-bottom:6px">💬 Xodim izohi:</div>
+        <div style="font-size:14px;line-height:1.6">${t.employee_note}</div>
+      </div>
+    ` : ''}
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
       <div>
         <div class="info-section">
@@ -916,7 +925,7 @@ function viewTask(id){
     if (t.status === 'new') {
       actionBtn = `<button class="btn btn-primary" onclick="changeStatus(${t.id},'progress');closeModal('taskViewModal')">▶ Boshlash</button>`;
     } else if (t.status === 'progress' || t.status === 'rejected') {
-      actionBtn = `<button class="btn btn-success" onclick="changeStatus(${t.id},'review');closeModal('taskViewModal')">📤 Bajarib topshirish (Direktorga yuborish)</button>`;
+      actionBtn = `<button class="btn btn-success" onclick="openSubmitTaskModal(${t.id})">📤 Bajarib topshirish (Direktorga yuborish)</button>`;
     } else if (t.status === 'review') {
       actionBtn = `<span style="font-size:12px;color:var(--warning);font-weight:600;padding:6px 12px;background:rgba(234,179,8,0.1);border-radius:6px">⏳ Direktor tasdiqlashi kutilmoqda</span>`;
     } else if (t.status === 'done') {
@@ -1041,6 +1050,33 @@ async function rejectTask(id){
     reasonInput.dataset.taskId = id;
   }
   openModal('rejectTaskModal');
+}
+
+function openSubmitTaskModal(id) {
+  const input = document.getElementById('submitNoteInput');
+  if (input) { input.value = ''; input.dataset.taskId = id; }
+  openModal('submitTaskModal');
+}
+
+async function confirmSubmitTask() {
+  const input = document.getElementById('submitNoteInput');
+  const id = input?.dataset.taskId;
+  const note = input?.value.trim() || '';
+  if (!id) return;
+
+  closeModal('submitTaskModal');
+  closeModal('taskViewModal');
+  showToast('Topshirilmoqda...', 'info');
+
+  const res = await API.updateTask(+id, { status: 'review', employee_note: note });
+  if (!res || res.success === false) {
+    showToast('❌ Xatolik: ' + (res?.error || 'Server bilan bog\'lanib bo\'lmadi.'), 'error');
+    return;
+  }
+  DB.update(DB.KEYS.TASKS, +id, { status: 'review', employee_note: note });
+  logActivity('update','task',+id,'Topshiriq tekshirishga yuborildi' + (note ? ': ' + note : ''));
+  showToast('✅ Ish Direktorga yuborildi!', 'success');
+  renderTasks(); buildTaskTabs(); renderDashboard(); updateTaskBadge();
 }
 
 async function confirmRejectTask() {
