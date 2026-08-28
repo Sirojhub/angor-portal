@@ -2041,16 +2041,20 @@ async function saveEmployee(){
 
   if(id){
     const res = await API.updateEmployee(+id, obj);
-    DB.update(DB.KEYS.USERS,+id,obj);
-    logActivity('update','employee',+id,'Xodim ma\'lumotlari yangilandi: '+name);
-    showToast('Xodim ma\'lumotlari yangilandi!','success');
-  } else {
-    const res = await API.createEmployee(obj);
-    if (res && res.error) {
-      showToast('⚠️ ' + res.error, 'error');
+    if (!res || res.success === false || res.error) {
+      showToast('❌ Xatolik: ' + (res?.error || 'Xodim ma\'lumotlarini yangilab bo\'lmadi.'), 'error');
       return;
     }
-    const created = (res && res.employee) ? res.employee : DB.create(DB.KEYS.USERS, obj);
+    DB.update(DB.KEYS.USERS,+id,obj);
+    logActivity('update','employee',+id,'Xodim ma\'lumotlari yangilandi: '+name);
+    showToast('✅ Xodim ma\'lumotlari yangilandi!','success');
+  } else {
+    const res = await API.createEmployee(obj);
+    if (!res || res.success === false || res.error || !res.employee) {
+      showToast('❌ Xatolik: ' + (res?.error || 'Xodimni yaratib bo\'lmadi. Qayta urinib ko\'ring.'), 'error');
+      return;
+    }
+    const created = res.employee;
     if (!DB.getOne(DB.KEYS.USERS, created.id)) {
       DB.create(DB.KEYS.USERS, created);
     }

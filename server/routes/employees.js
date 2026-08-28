@@ -24,12 +24,16 @@ router.post('/', auth, (req, res) => {
     return res.status(400).json({ error: 'Ism va email kiritilishi shart' });
   }
 
+  if (!password || password.length < 6) {
+    return res.status(400).json({ error: 'Parol kamida 6 belgidan iborat bo\'lishi shart' });
+  }
+
   const existing = db.prepare('SELECT id FROM users WHERE email = ?').get(email);
   if (existing) {
     return res.status(400).json({ error: 'Bu email bilan foydalanuvchi allaqachon mavjud' });
   }
 
-  const hash = bcrypt.hashSync(password || '123456', 10);
+  const hash = bcrypt.hashSync(password, 10);
   const userAvatar = avatar || name.split(' ').map(x=>x[0]).join('').toUpperCase().slice(0,2);
   const userColor = avatarColor || avatar_color || '#C8922A';
   const userHireDate = hireDate || hire_date || new Date().toISOString().slice(0,10);
