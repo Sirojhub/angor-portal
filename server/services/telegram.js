@@ -110,16 +110,13 @@ const TelegramService = {
 ℹ️ <i>Portal orqali qabul qilib oling: https://angor-portal.onrender.com</i>
     `.trim();
 
-    // Send ONLY to the assigned target employee's Chat ID if available!
     if (targetChatId) {
       return this.sendMessage(text, null, targetChatId);
     }
-    // Fallback to default Admin channel ONLY if assigned employee has no Chat ID
-    const defaultChat = this.getSettings().chatId;
-    if (defaultChat) {
-      return this.sendMessage(text, null, defaultChat);
-    }
-    return Promise.resolve({ ok: true });
+    // Shaxsiy Telegram ID sozlanmagan bo'lsa — umumiy kanalga YUBORILMAYDI (maxfiylik).
+    // Foydalanuvchi baribir ilova ichidagi bildirishnomani (qo'ng'iroq belgisi) ko'radi.
+    console.log('[Telegram Bot] Foydalanuvchining shaxsiy Chat ID\'si yo\'q — Telegram xabari o\'tkazib yuborildi (faqat ilova ichi bildirishnomasi ishlaydi).');
+    return Promise.resolve({ ok: false, skipped: true });
   },
 
   notifyTaskStatusUpdate(task, oldStatus, newStatus, customChatId = null) {
@@ -155,11 +152,10 @@ const TelegramService = {
     if (targetChatId) {
       return this.sendMessage(text, null, targetChatId);
     }
-    const defaultChat = this.getSettings().chatId;
-    if (defaultChat) {
-      return this.sendMessage(text, null, defaultChat);
-    }
-    return Promise.resolve({ ok: true });
+    // Shaxsiy Telegram ID sozlanmagan bo'lsa — umumiy kanalga YUBORILMAYDI (maxfiylik).
+    // Foydalanuvchi baribir ilova ichidagi bildirishnomani (qo'ng'iroq belgisi) ko'radi.
+    console.log('[Telegram Bot] Foydalanuvchining shaxsiy Chat ID\'si yo\'q — Telegram xabari o\'tkazib yuborildi (faqat ilova ichi bildirishnomasi ishlaydi).');
+    return Promise.resolve({ ok: false, skipped: true });
   },
 
   notifyNewDocument(doc, customChatId = null) {
@@ -189,11 +185,10 @@ const TelegramService = {
     if (targetChatId) {
       return this.sendMessage(text, null, targetChatId);
     }
-    const defaultChat = this.getSettings().chatId;
-    if (defaultChat) {
-      return this.sendMessage(text, null, defaultChat);
-    }
-    return Promise.resolve({ ok: true });
+    // Shaxsiy Telegram ID sozlanmagan bo'lsa — umumiy kanalga YUBORILMAYDI (maxfiylik).
+    // Foydalanuvchi baribir ilova ichidagi bildirishnomani (qo'ng'iroq belgisi) ko'radi.
+    console.log('[Telegram Bot] Foydalanuvchining shaxsiy Chat ID\'si yo\'q — Telegram xabari o\'tkazib yuborildi (faqat ilova ichi bildirishnomasi ishlaydi).');
+    return Promise.resolve({ ok: false, skipped: true });
   }
 };
 

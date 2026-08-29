@@ -155,56 +155,42 @@ router.post('/reset-password', async (req, res) => {
   if (rRecord.count >= 3) rRecord.lockUntil = now + 15 * 60 * 1000;
   resetAttempts.set(rateKey, rRecord);
 
-  const EmailService = require('../services/email');
   const TelegramService = require('../services/telegram');
 
-  // Email orqali yuborish
-  let emailResult = { ok: false, error: 'Bajarilmadi' };
-  try {
-    emailResult = await EmailService.sendResetCodeEmail(user.email, user.name, otpCode);
-    if (!emailResult.ok) {
-      console.error(`[Auth] EmailService yuborishda muammo:`, emailResult.error);
-    }
-  } catch (err) {
-    console.error(`[Auth] EmailService kutilmagan try/catch xatosi:`, err);
-    emailResult = { ok: false, error: err.message };
-  }
-
-  // Telegram orqali — FAQAT shu foydalanuvchining O'Z chat ID'siga (global admin kanaliga emas!)
-  let telegramResult = { ok: false };
   const userChatId = user.telegram_chat_id || user.chat_id;
-  if (userChatId) {
-    try {
-      telegramResult = await TelegramService.sendMessage(
-        `🔑 <b>ANGOR AGRO STAR — PAROL TIKLASH KODI</b>\n` +
-        `--------------------------------------\n` +
-        `🔐 <b>Bir martalik tasdiqlash kodi</b>: <code>${otpCode}</code>\n` +
-        `⏱️ <b>Amal qilish muddati</b>: 10 daqiqa`,
-        null,
-        userChatId
-      );
-    } catch (err) {
-      console.error(`[Auth] TelegramService send xatosi:`, err.message);
-    }
-  } else {
-    console.log(`[Auth] Foydalanuvchining shaxsiy Telegram Chat ID'si yo'q. User ID: ${user.id}`);
-  }
-
-  const channels = [];
-  if (emailResult.ok) channels.push('Email');
-  if (telegramResult.ok) channels.push('Telegram');
-
-  if (channels.length === 0) {
-    console.error(`[Auth] Kod hech qaysi kanal orqali yuborilmadi! Email xatosi: ${emailResult.error || 'Noma\'lum'}`);
-    return res.status(500).json({
-      error: `Kod yuborib bo'lmadi (${emailResult.error || 'SMTP sozlamalarini tekshiring'}). Administratorga murojaat qiling.`
+  if (!userChatId) {
+    console.warn(`[Auth] Foydalanuvchining Telegram ID'si sozlanmagan. User ID: ${user.id}`);
+    return res.status(400).json({
+      error: 'Sizning profilingizda Telegram ID sozlanmagan. Iltimos, profilingizga kirib Telegram ID\'ingizni kiriting yoki administratorga murojaat qiling.'
     });
   }
 
-  console.log(`[Auth] Reset kodi muvaffaqiyatli yuborildi. Kanallar: ${channels.join(', ')}`);
+  let telegramResult;
+  try {
+    telegramResult = await TelegramService.sendMessage(
+      `🔑 <b>ANGOR AGRO STAR — PAROL TIKLASH KODI</b>\n` +
+      `--------------------------------------\n` +
+      `🔐 <b>Bir martalik tasdiqlash kodi</b>: <code>${otpCode}</code>\n` +
+      `⏱️ <b>Amal qilish muddati</b>: 10 daqiqa`,
+      null,
+      userChatId
+    );
+  } catch (err) {
+    console.error(`[Auth] TelegramService send xatosi:`, err.message);
+    telegramResult = { ok: false, error: err.message };
+  }
+
+  if (!telegramResult || !telegramResult.ok) {
+    console.error(`[Auth] Telegram orqali yuborib bo'lmadi:`, telegramResult?.error || telegramResult?.description);
+    return res.status(500).json({
+      error: 'Telegram orqali kod yuborib bo\'lmadi. Avval kompaniya botiga /start bosganingizni tekshiring, yoki administratorga murojaat qiling.'
+    });
+  }
+
+  console.log(`[Auth] Reset kodi Telegram orqali muvaffaqiyatli yuborildi.`);
   res.json({
     success: true,
-    message: `Tasdiqlash kodi ${channels.join(' va ')} orqali yuborildi. Kod 10 daqiqa amal qiladi.`
+    message: 'Tasdiqlash kodi Telegram orqali yuborildi. Kod 10 daqiqa amal qiladi.'
   });
 });
 
