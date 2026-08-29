@@ -3,7 +3,7 @@
     {
       "name": "Aziz Karimov",
       "email": "aziz@angor.uz",
-      "password": "$2a$10$jlw0eoabNFWgZT3boRUu8uMpOx5OebGC2.h.t.ML2h/.1AC/GCbBu",
+      "password": "$2a$10$W74MnmJrITiLtHHonynb6OAMS8Pj9TvMdWYQrYK5xsAhU439RVQFW",
       "role": "director",
       "position": "Direktor",
       "department": "Boshqaruv",
@@ -15,12 +15,15 @@
       "status": "active",
       "id": 1,
       "created_at": "2026-08-20T04:15:43.185Z",
-      "updated_at": "2026-08-20T04:15:43.185Z"
+      "updated_at": "2026-08-29T05:18:46.764Z",
+      "reset_code": null,
+      "reset_expires": null,
+      "reset_used": null
     },
     {
       "name": "Sirojiddin Faxriddinovich",
       "email": "sirojiddin1997tmi@gmail.com",
-      "password": "$2a$10$f/fhettUUcQONenPqLq3RugJAaEksJmhbsFsfB83e.b/VZLNl/SIa",
+      "password": "$2a$10$/IW.88aIbMsIRcsxbErEeuEdoaL061BOJyYyq8TFy1aeiLjoSIQQ6",
       "role": "employee",
       "position": "Bosh agronom",
       "department": "Ishlab chiqarish",
@@ -32,10 +35,29 @@
       "status": "active",
       "id": 6,
       "created_at": "2026-08-21T06:38:33.081Z",
-      "updated_at": "2026-08-26T07:45:43.930Z",
-      "reset_code": null,
-      "reset_expires": null,
-      "reset_used": null
+      "updated_at": "2026-08-29T05:19:21.359Z",
+      "reset_code": "299398",
+      "reset_expires": 1787983746668,
+      "reset_used": false
+    },
+    {
+      "name": "QA Test Xodim",
+      "email": "qatest_emp@angor.uz",
+      "password": "$2a$10$nsUVDOt7nSami1RrBugKmuU3X9TpaudmKTMiW4zx6H295MsnSow.m",
+      "role": "employee",
+      "position": "Agronom",
+      "department": "Ishlab chiqarish",
+      "phone": "+998 90 111-00-00",
+      "avatar": "QT",
+      "avatar_color": "#ea580c",
+      "hire_date": "2026-08-29",
+      "id": 7,
+      "created_at": "2026-08-29T05:52:18.891Z",
+      "updated_at": "2026-08-29T05:55:30.093Z",
+      "efficiency": 75,
+      "status": "active",
+      "telegram_chat_id": "",
+      "chat_id": ""
     }
   ],
   "tasks": [
@@ -148,6 +170,40 @@
       "id": 8,
       "created_at": "2026-08-24T08:43:06.947Z",
       "updated_at": "2026-08-24T08:43:08.449Z"
+    },
+    {
+      "title": "QA Test Topshiriq",
+      "description": "QA Test Description",
+      "assigned_to": 6,
+      "assigned_name": "Sirojiddin Faxriddinovich",
+      "deadline": "2026-08-30",
+      "priority": "medium",
+      "category": "Ishlab chiqarish",
+      "status": "done",
+      "created_by": 1,
+      "batch_id": null,
+      "id": 9,
+      "created_at": "2026-08-29T05:28:42.394Z",
+      "updated_at": "2026-08-29T05:43:24.914Z",
+      "review_comment": "QA rad etish sababi",
+      "employee_note": "QA qayta topshirish"
+    },
+    {
+      "title": "QA Broadcast Task",
+      "description": "",
+      "assigned_to": 6,
+      "assigned_name": "Sirojiddin Faxriddinovich",
+      "deadline": "2026-08-30",
+      "priority": "medium",
+      "category": "Ishlab chiqarish",
+      "status": "new",
+      "created_by": 1,
+      "batch_id": "batch_1787982420596",
+      "id": 10,
+      "created_at": "2026-08-29T05:47:00.597Z",
+      "updated_at": "2026-08-29T05:47:00.597Z",
+      "review_comment": null,
+      "employee_note": null
     }
   ],
   "documents": [
@@ -298,6 +354,54 @@
       "task_id": null,
       "id": 8,
       "created_at": "2026-08-24T08:43:08.859Z"
+    },
+    {
+      "title": "QA Test Hujjat",
+      "category": "shartnoma",
+      "version": "v1",
+      "file_type": "FAYL",
+      "file_size": "1.2 MB",
+      "file_path": null,
+      "uploaded_by": 1,
+      "uploaded_name": "Aziz Karimov",
+      "upload_date": "2026-08-29",
+      "status": "active",
+      "description": "QA Test Hujjat tavsifi",
+      "target_user_id": null,
+      "target_user_name": null,
+      "reply_to_id": null,
+      "task_id": null,
+      "doc_number": "2026-001",
+      "client_id": null,
+      "client_name": null,
+      "expiry_date": "60918-02-20",
+      "expiry_notified": false,
+      "id": 9,
+      "created_at": "2026-08-29T05:22:52.165Z"
+    },
+    {
+      "title": "QA Test Hujjat",
+      "category": "shartnoma",
+      "version": "v1",
+      "file_type": "FAYL",
+      "file_size": "1.2 MB",
+      "file_path": null,
+      "uploaded_by": 1,
+      "uploaded_name": "Aziz Karimov",
+      "upload_date": "2026-08-29",
+      "status": "active",
+      "description": "QA Test Hujjat tavsifi",
+      "target_user_id": null,
+      "target_user_name": null,
+      "reply_to_id": null,
+      "task_id": null,
+      "doc_number": "2026-002",
+      "client_id": null,
+      "client_name": null,
+      "expiry_date": "2026-09-18",
+      "expiry_notified": true,
+      "id": 10,
+      "created_at": "2026-08-29T05:24:11.610Z"
     }
   ],
   "clients": [
@@ -548,6 +652,69 @@
       "type": "success",
       "is_read": 0,
       "created_at": "2026-08-26T06:04:02.779Z"
+    },
+    {
+      "id": 21,
+      "user_id": 1,
+      "title": "Hujjat muddati tugamoqda",
+      "message": "⚠️ «QA Test Hujjat» (№2026-002) hujjatining amal qilish muddati 20 kundan so'ng tugaydi.",
+      "type": "warning",
+      "is_read": 0,
+      "created_at": "2026-08-29T05:24:18.079Z"
+    },
+    {
+      "id": 22,
+      "user_id": 6,
+      "title": "Yangi topshiriq",
+      "message": "Sizga «QA Test Topshiriq» topshirig'i tayinlandi",
+      "type": "info",
+      "is_read": 0,
+      "created_at": "2026-08-29T05:28:42.398Z"
+    },
+    {
+      "id": 23,
+      "user_id": 1,
+      "title": "Topshiriq bajarildi (Tasdiqlash kutilmoqda)",
+      "message": "👤 Sirojiddin Faxriddinovich «QA Test Topshiriq» topshirig'ini bajarib topshirdi\nXodim izohi: QA test izohi",
+      "type": "warning",
+      "is_read": 0,
+      "created_at": "2026-08-29T05:32:19.800Z"
+    },
+    {
+      "id": 24,
+      "user_id": 6,
+      "title": "Topshiriq rad etildi",
+      "message": "❌ «QA Test Topshiriq» topshirig'ingiz rad etildi va qayta ko'rib chiqishga yuborildi.\nSabab: QA rad etish sababi",
+      "type": "error",
+      "is_read": 0,
+      "created_at": "2026-08-29T05:37:42.317Z"
+    },
+    {
+      "id": 25,
+      "user_id": 1,
+      "title": "Topshiriq bajarildi (Tasdiqlash kutilmoqda)",
+      "message": "👤 Sirojiddin Faxriddinovich «QA Test Topshiriq» topshirig'ini bajarib topshirdi\nXodim izohi: QA qayta topshirish",
+      "type": "warning",
+      "is_read": 0,
+      "created_at": "2026-08-29T05:41:06.884Z"
+    },
+    {
+      "id": 26,
+      "user_id": 6,
+      "title": "Topshiriq tasdiqlandi",
+      "message": "✅ «QA Test Topshiriq» topshirig'ingiz Direktor tomonidan tasdiqlandi",
+      "type": "success",
+      "is_read": 0,
+      "created_at": "2026-08-29T05:43:24.917Z"
+    },
+    {
+      "id": 27,
+      "user_id": 6,
+      "title": "Yangi topshiriq",
+      "message": "Sizga «QA Broadcast Task» topshirig'i tayinlandi",
+      "type": "info",
+      "is_read": 0,
+      "created_at": "2026-08-29T05:47:00.601Z"
     }
   ],
   "activity_logs": [
@@ -890,6 +1057,116 @@
       "model_id": 1,
       "description": "«test uchun sirojiddin» topshirig'i holatini «Bajarildi» ga o'zgartirdi",
       "created_at": "2026-08-26T06:04:02.778Z"
+    },
+    {
+      "id": 35,
+      "user_id": 1,
+      "user_name": "Aziz Karimov",
+      "action": "upload",
+      "model": "document",
+      "model_id": 9,
+      "description": "Yangi hujjat yukladi: «QA Test Hujjat» (FAYL, 1.2 MB)",
+      "created_at": "2026-08-29T05:22:52.167Z"
+    },
+    {
+      "id": 36,
+      "user_id": 1,
+      "user_name": "Aziz Karimov",
+      "action": "upload",
+      "model": "document",
+      "model_id": 10,
+      "description": "Yangi hujjat yukladi: «QA Test Hujjat» (FAYL, 1.2 MB)",
+      "created_at": "2026-08-29T05:24:11.611Z"
+    },
+    {
+      "id": 37,
+      "user_id": 1,
+      "user_name": "Aziz Karimov",
+      "action": "create",
+      "model": "task",
+      "model_id": 9,
+      "description": "«QA Test Topshiriq» topshirig'ini yaratdi",
+      "created_at": "2026-08-29T05:28:42.396Z"
+    },
+    {
+      "id": 38,
+      "user_id": 6,
+      "user_name": "Sirojiddin Faxriddinovich",
+      "action": "update",
+      "model": "task",
+      "model_id": 9,
+      "description": "«QA Test Topshiriq» topshirig'i holatini «Jarayonda» ga o'zgartirdi",
+      "created_at": "2026-08-29T05:30:45.679Z"
+    },
+    {
+      "id": 39,
+      "user_id": 6,
+      "user_name": "Sirojiddin Faxriddinovich",
+      "action": "update",
+      "model": "task",
+      "model_id": 9,
+      "description": "«QA Test Topshiriq» topshirig'i holatini «Tasdiqlashda» ga o'zgartirdi",
+      "created_at": "2026-08-29T05:32:19.798Z"
+    },
+    {
+      "id": 40,
+      "user_id": 1,
+      "user_name": "Aziz Karimov",
+      "action": "update",
+      "model": "task",
+      "model_id": 9,
+      "description": "«QA Test Topshiriq» topshirig'i holatini «Rad etildi» ga o'zgartirdi",
+      "created_at": "2026-08-29T05:37:42.315Z"
+    },
+    {
+      "id": 41,
+      "user_id": 6,
+      "user_name": "Sirojiddin Faxriddinovich",
+      "action": "update",
+      "model": "task",
+      "model_id": 9,
+      "description": "«QA Test Topshiriq» topshirig'i holatini «Tasdiqlashda» ga o'zgartirdi",
+      "created_at": "2026-08-29T05:41:06.882Z"
+    },
+    {
+      "id": 42,
+      "user_id": 1,
+      "user_name": "Aziz Karimov",
+      "action": "update",
+      "model": "task",
+      "model_id": 9,
+      "description": "«QA Test Topshiriq» topshirig'i holatini «Bajarildi» ga o'zgartirdi",
+      "created_at": "2026-08-29T05:43:24.916Z"
+    },
+    {
+      "id": 43,
+      "user_id": 1,
+      "user_name": "Aziz Karimov",
+      "action": "create",
+      "model": "task",
+      "model_id": 10,
+      "description": "«QA Broadcast Task» topshirig'ini yaratdi",
+      "created_at": "2026-08-29T05:47:00.599Z"
+    },
+    {
+      "id": 44,
+      "user_id": 1,
+      "user_name": "Aziz Karimov",
+      "action": "create",
+      "model": "user",
+      "model_id": 7,
+      "description": "Yangi xodim «QA Test Xodim» ni qo'shdi",
+      "created_at": "2026-08-29T05:52:18.893Z"
+    },
+    {
+      "id": 45,
+      "user_id": 1,
+      "user_name": "Aziz Karimov",
+      "action": "update",
+      "model": "user",
+      "model_id": 7,
+      "description": "«QA Test Xodim» xodimi ma'lumotlarini yangiladi",
+      "created_at": "2026-08-29T05:55:30.095Z"
     }
   ],
   "settings": {
