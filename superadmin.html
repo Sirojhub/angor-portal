@@ -240,6 +240,17 @@ async function saFetch(path, method, body) {
   if (body && method !== 'GET') opts.body = JSON.stringify(body);
   const res = await fetch(BASE + path, opts);
   const data = await res.json();
+  if (res.status === 401 || res.status === 403) {
+    clearToken();
+    document.getElementById('dashPage').style.display = 'none';
+    document.getElementById('loginPage').style.display = 'flex';
+    const errEl = document.getElementById('loginError');
+    if (errEl) {
+      errEl.textContent = 'Sessiya muddati tugadi. Iltimos, qayta kiring.';
+      errEl.style.display = 'block';
+    }
+    throw new Error('Sessiya tugadi');
+  }
   if (!res.ok) throw new Error(data.error || 'Xatolik');
   return data;
 }
