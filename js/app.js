@@ -908,9 +908,9 @@ function viewTask(id){
         <div style="font-size:12px;font-weight:600;margin-bottom:8px">📤 Ushbu topshiriqqa yangi hujjat biriktirish</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
           <input type="text" class="form-control form-control-sm" id="taskDocTitle_${t.id}" placeholder="Hujjat nomi (masalan: Bajarilgan ish hisoboti)">
-          <input type="file" class="form-control form-control-sm" id="taskDocFile_${t.id}">
+          <input type="file" class="form-control form-control-sm" id="taskDocFile_${t.id}" onchange="handleTaskFileSelect(this, ${t.id})">
         </div>
-        <button class="btn btn-sm btn-primary" onclick="uploadTaskDocument(${t.id})">📤 Hujjatni biriktirish va yuborish</button>
+        <button class="btn btn-sm btn-primary" onclick="uploadTaskDocument(${t.id})">📥 Hujjatni biriktirish va yuborish</button>
       </div>
     </div>
   `;
@@ -940,6 +940,17 @@ function viewTask(id){
   `;
   renderTaskDocs(t.id);
   openModal('taskViewModal');
+}
+
+function handleTaskFileSelect(input, taskId) {
+  const file = input?.files[0];
+  if (file) {
+    const titleInput = document.getElementById(`taskDocTitle_${taskId}`);
+    if (titleInput && !titleInput.value.trim()) {
+      const cleanName = file.name.replace(/\.[^/.]+$/, "");
+      titleInput.value = cleanName;
+    }
+  }
 }
 
 function renderTaskDocs(taskId) {
@@ -977,12 +988,17 @@ async function uploadTaskDocument(taskId) {
   const titleInput = document.getElementById(`taskDocTitle_${taskId}`);
   const fileInput = document.getElementById(`taskDocFile_${taskId}`);
 
-  const title = titleInput?.value.trim();
+  let title = titleInput?.value.trim();
   const file = fileInput?.files[0];
 
-  if (!title) {
-    showToast('Iltimos, hujjat nomini kiriting!', 'error');
+  if (!file && !title) {
+    showToast('Iltimos, fayl va hujjat nomini kiriting!', 'error');
     return;
+  }
+
+  if (file && !title) {
+    title = file.name.replace(/\.[^/.]+$/, "");
+    if (titleInput) titleInput.value = title;
   }
 
   showToast('Hujjat topshiriqqa biriktirilmoqda...', 'info');
