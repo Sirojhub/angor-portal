@@ -1165,31 +1165,33 @@ function renderDocs(){
     docs=docs.filter(d =>
       (d.title||'').toLowerCase().includes(search) ||
       (d.description||'').toLowerCase().includes(search) ||
-      (d.uploadedName||'').toLowerCase().includes(search) ||
+      (d.uploadedName||d.uploaded_name||'').toLowerCase().includes(search) ||
       (catLabels[d.category]||d.category||'').toLowerCase().includes(search) ||
       (d.doc_number||'').toLowerCase().includes(search) ||
       (d.client_name||'').toLowerCase().includes(search)
     );
   }
   const user=document.getElementById('docFilterUser')?.value;
-  if(user) docs=docs.filter(d=>d.uploadedBy==user);
+  if(user) docs=docs.filter(d=>(d.uploadedBy||d.uploaded_by)==user);
 
   const clientFilter=document.getElementById('docFilterClient')?.value;
   if(clientFilter) docs=docs.filter(d=>d.client_id==clientFilter);
 
   const dateFrom = document.getElementById('docDateFrom')?.value;
   const dateTo = document.getElementById('docDateTo')?.value;
-  if (dateFrom) docs = docs.filter(d => (d.uploadDate||'') >= dateFrom);
-  if (dateTo) docs = docs.filter(d => (d.uploadDate||'') <= dateTo);
+  if (dateFrom) docs = docs.filter(d => (d.uploadDate||d.upload_date||'') >= dateFrom);
+  if (dateTo) docs = docs.filter(d => (d.uploadDate||d.upload_date||'') <= dateTo);
 
   const sortBy = document.getElementById('docSort')?.value || 'date_desc';
   docs = [...docs].sort((a, b) => {
+    const dateA = new Date(a.uploadDate || a.upload_date || a.created_at || 0);
+    const dateB = new Date(b.uploadDate || b.upload_date || b.created_at || 0);
     switch (sortBy) {
-      case 'date_asc': return new Date(a.uploadDate) - new Date(b.uploadDate);
+      case 'date_asc': return dateA - dateB;
       case 'title_asc': return (a.title||'').localeCompare(b.title||'');
       case 'title_desc': return (b.title||'').localeCompare(a.title||'');
       case 'date_desc':
-      default: return new Date(b.uploadDate) - new Date(a.uploadDate);
+      default: return dateB - dateA;
     }
   });
 
@@ -1201,7 +1203,7 @@ function renderDocs(){
     ? docs.map(d=>`<tr>
         <td>
           <div style="display:flex;align-items:center;gap:8px">
-            <span style="font-size:20px">${(['JPG','PNG','JPEG','GIF','WEBP'].includes((d.fileType||'').toUpperCase())) ? '🖼️' : (ftIcons[d.fileType]||'📄')}</span>
+            <span style="font-size:20px">${(['JPG','PNG','JPEG','GIF','WEBP'].includes((d.fileType||d.file_type||'').toUpperCase())) ? '🖼️' : (ftIcons[d.fileType||d.file_type]||'📄')}</span>
             <div>
               ${d.doc_number ? `<div style="font-size:11px;color:var(--primary);font-weight:700;font-family:monospace;margin-bottom:2px">№ ${d.doc_number}</div>` : ''}
               <div style="font-weight:500">${d.title}</div>
@@ -1218,10 +1220,10 @@ function renderDocs(){
           </div>
         </td>
         <td><span class="status status-new" style="font-size:11px">${catLabels[d.category]||d.category}</span></td>
-        <td><span style="background:#f1f5f9;padding:2px 8px;border-radius:6px;font-size:12px;font-weight:700">${d.version}</span></td>
-        <td>${d.uploadedName}</td>
-        <td>${fmtDate(d.uploadDate)}</td>
-        <td style="color:var(--text-muted)">${d.fileSize||'—'}</td>
+        <td><span style="background:#f1f5f9;padding:2px 8px;border-radius:6px;font-size:12px;font-weight:700">${d.version||'v1'}</span></td>
+        <td>${d.uploadedName || d.uploaded_name || '—'}</td>
+        <td>${fmtDate(d.uploadDate || d.upload_date)}</td>
+        <td style="color:var(--text-muted)">${d.fileSize || d.file_size || '—'}</td>
         <td><span class="status ${statusClass[d.status]||'status-active'}">${statusLabels[d.status]||'Amalda'}</span></td>
         <td>
           <div style="display:flex;gap:4px">
