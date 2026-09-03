@@ -87,8 +87,8 @@
     },
     {
       "name": "Sirojiddin Faxriddinovich",
-      "email": "sirojiddin@angor.uz",
-      "password": "$2a$10$n.jakL1z1UnDHG83floNUOD2eCgcjzEI.3Gapg1ArWNNk7vId4Mfi",
+      "email": "sirojiddin1997tmi@gmail.com",
+      "password": "$2a$10$/DJB8Oz/QsqXIsyWgiLMx.WOrLyOjRp.i8/kFV.GfFpV/3UO94Adm",
       "role": "employee",
       "position": "Bosh Agronom",
       "department": "Ishlab chiqarish",
@@ -101,43 +101,6 @@
       "id": 6,
       "created_at": "2026-08-21T06:38:33.081Z",
       "updated_at": "2026-08-21T06:38:33.081Z"
-    },
-    {
-      "name": "Sirojiddin Faxriddinovich",
-      "email": "sirojiddin1997tmi@gmail.com",
-      "password": "$2a$10$aloFOxaJYy4EDorELP6t9eLuTotwfbULZuIVKhJQeHjWTc0N0WKNa",
-      "role": "employee",
-      "position": "Bosh agronom",
-      "department": "Ishlab chiqarish",
-      "phone": "+998 90 123-45-67",
-      "avatar": "SF",
-      "avatar_color": "#C8922A",
-      "hire_date": "2026-08-21",
-      "efficiency": 95,
-      "status": "active",
-      "id": 7,
-      "created_at": "2026-09-03T05:25:02.126Z",
-      "updated_at": "2026-09-03T05:25:02.126Z"
-    },
-    {
-      "name": "Dilshod Alimov",
-      "email": "dilshod@angor.uz",
-      "password": "$2a$10$WmCPGpKhfnezGwm0MWp5lechJXGv//FyD.oqZEIqjZ.hPpaDjwOG6",
-      "role": "employee",
-      "position": "Agrotexnik",
-      "department": "Ishlab chiqarish",
-      "phone": "+998 90 777-00-11",
-      "avatar": "DA",
-      "avatar_color": "#16a34a",
-      "hire_date": "2026-09-03",
-      "id": 8,
-      "created_at": "2026-09-03T05:31:04.360Z",
-      "updated_at": "2026-09-03T05:31:26.640Z",
-      "avatarColor": "#16a34a",
-      "hireDate": "2026-09-03",
-      "status": "active",
-      "telegram_chat_id": "",
-      "chat_id": ""
     }
   ],
   "tasks": [
@@ -746,26 +709,6 @@
       "model_id": 10,
       "description": "«Dala №1 brokkoli sug-orilishini nazorat qilish va fotosurat yuklash» topshirig'ini yaratdi",
       "created_at": "2026-08-21T06:38:50.439Z"
-    },
-    {
-      "id": 11,
-      "user_id": 1,
-      "user_name": "Aziz Karimov",
-      "action": "create",
-      "model": "user",
-      "model_id": 8,
-      "description": "Yangi xodim «Dilshod Alimov» ni qo'shdi",
-      "created_at": "2026-09-03T05:31:04.361Z"
-    },
-    {
-      "id": 12,
-      "user_id": 1,
-      "user_name": "Aziz Karimov",
-      "action": "update",
-      "model": "user",
-      "model_id": 8,
-      "description": "«Dilshod Alimov» xodimi ma'lumotlarini yangiladi",
-      "created_at": "2026-09-03T05:31:26.641Z"
     }
   ],
   "settings": {
