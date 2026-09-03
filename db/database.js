@@ -115,7 +115,7 @@ class DatabaseEngine {
           return [{ cnt: (db.data[table] || []).length }];
         }
 
-        if (/SELECT \* FROM users/i.test(cleanSql)) {
+        if (/SELECT.*FROM users/i.test(cleanSql)) {
           if (/WHERE.*email/i.test(cleanSql)) {
             const targetEmail = (args[0] || '').toString().trim().toLowerCase();
             return db.data.users.filter(u => (u.email || '').trim().toLowerCase() === targetEmail);
