@@ -1880,45 +1880,56 @@ function renderEmployeePage(){
 
 function renderEmployeeCards(){
   const users=DB.get(DB.KEYS.USERS);
-  const tasks=DB.get(DB.KEYS.TASKS);
+  const tasks=DB.get(DB.KEYS.TASKS).map(normalizeTask);
   document.getElementById('empCards').innerHTML=users.slice(0,5).map(u=>{
-    const myTasks=tasks.filter(t=>t.assignedTo===u.id);
+    // avatar_color va avatarColor ni normallashtirish
+    const bgColor = u.avatar_color || u.avatarColor || '#1A3A6B';
+    const myTasks=tasks.filter(t=>t.assignedTo==u.id || t.assigned_to==u.id);
     const done=myTasks.filter(t=>t.status==='done').length;
+    const eff = u.efficiency || 75;
     return `<div class="card" style="padding:20px;text-align:center;cursor:pointer" onclick="openEmpDrawer(${u.id})">
-      <div class="avatar" style="width:48px;height:48px;font-size:18px;background:${u.avatarColor};margin:0 auto 12px">${u.avatar}</div>
+      <div class="avatar" style="width:48px;height:48px;font-size:18px;background:${bgColor};margin:0 auto 12px;color:#fff">${u.avatar||'?'}</div>
       <div style="font-weight:700;font-size:14px">${u.name}</div>
-      <div style="font-size:12px;color:var(--text-muted);margin-top:2px">${u.position}</div>
+      <div style="font-size:12px;color:var(--text-muted);margin-top:2px">${u.position||'—'}</div>
       <div style="margin-top:12px">
-        <div class="progress-bar"><div class="progress-fill ${u.efficiency>=85?'high':u.efficiency>=70?'medium':'low'}" style="width:${u.efficiency}%"></div></div>
-        <div style="font-size:12px;font-weight:700;color:var(--primary);margin-top:4px">${u.efficiency}%</div>
+        <div class="progress-bar"><div class="progress-fill ${eff>=85?'high':eff>=70?'medium':'low'}" style="width:${eff}%"></div></div>
+        <div style="font-size:12px;font-weight:700;color:var(--primary);margin-top:4px">${eff}%</div>
       </div>
     </div>`;
   }).join('');
 }
 
 function renderEmployees(){
-  const tasks=DB.get(DB.KEYS.TASKS);
+  const tasks=DB.get(DB.KEYS.TASKS).map(normalizeTask);
   let users=DB.get(DB.KEYS.USERS);
   const search=document.getElementById('empSearch')?.value.toLowerCase();
-  if(search) users=users.filter(u=>u.name.toLowerCase().includes(search)||u.position.toLowerCase().includes(search));
+  if(search) users=users.filter(u=>
+    (u.name||'').toLowerCase().includes(search)||
+    (u.position||'').toLowerCase().includes(search)||
+    (u.email||'').toLowerCase().includes(search)
+  );
 
   const roleLabels={director:'Direktor',manager:'Menejer',employee:'Xodim'};
-  document.getElementById('empBody').innerHTML=users.map(u=>{
-    const myT=tasks.filter(t=>t.assignedTo===u.id);
+  document.getElementById('empBody').innerHTML=users.length ? users.map(u=>{
+    // Normalizatsiya: server ham avatar_color, ham avatarColor qaytarishi mumkin
+    const bgColor = u.avatar_color || u.avatarColor || '#1A3A6B';
+    const eff = u.efficiency || 75;
+    const myT=tasks.filter(t=>t.assignedTo==u.id || t.assigned_to==u.id);
     const active=myT.filter(t=>t.status!=='done').length;
+    const statusActive = u.status === 'active';
     return `<tr>
       <td>
         <div style="display:flex;align-items:center;gap:10px">
-          <div class="avatar" style="background:${u.avatarColor};color:#fff">${u.avatar}</div>
+          <div class="avatar" style="background:${bgColor};color:#fff">${u.avatar||'?'}</div>
           <div>
             <div style="font-weight:600">${u.name}</div>
             <div style="font-size:11px;color:var(--text-muted)">${u.email}</div>
           </div>
         </div>
       </td>
-      <td>${u.position}</td>
-      <td>${u.department}</td>
-      <td>${u.phone}</td>
+      <td>${u.position||'—'}</td>
+      <td>${u.department||'—'}</td>
+      <td>${u.phone||'—'}</td>
       <td>
         <span style="font-weight:700;color:var(--primary)">${active}</span>
         <span style="color:var(--text-light)"> faol / ${myT.length} jami</span>
@@ -1926,12 +1937,12 @@ function renderEmployees(){
       <td>
         <div style="display:flex;align-items:center;gap:8px">
           <div style="width:60px;height:6px;background:var(--bg);border-radius:4px;overflow:hidden">
-            <div style="width:${u.efficiency}%;height:100%;background:${u.efficiency>=85?'var(--success)':u.efficiency>=70?'var(--warning)':'var(--danger)'};border-radius:4px"></div>
+            <div style="width:${eff}%;height:100%;background:${eff>=85?'var(--success)':eff>=70?'var(--warning)':'var(--danger)'};border-radius:4px"></div>
           </div>
-          <span style="font-weight:700;font-size:13px">${u.efficiency}%</span>
+          <span style="font-weight:700;font-size:13px">${eff}%</span>
         </div>
       </td>
-      <td><span class="status ${u.status==='active'?'status-active':'status-inactive'}">${u.status==='active'?'Faol':'Nofaol'}</span></td>
+      <td><span class="status ${statusActive?'status-active':'status-inactive'}">${statusActive?'Faol':'Nofaol'}</span></td>
       <td>
         <div style="display:flex;gap:4px">
           <button class="btn btn-sm btn-outline" onclick="openEmpDrawer(${u.id})">Ko'rish</button>
@@ -1939,41 +1950,46 @@ function renderEmployees(){
         </div>
       </td>
     </tr>`;
-  }).join('');
+  }).join('') : '<tr><td colspan="8" style="text-align:center;color:var(--text-muted);padding:20px">Xodimlar topilmadi</td></tr>';
 }
 
 function openEmpDrawer(id){
   const u=DB.getOne(DB.KEYS.USERS,id);
   if(!u)return;
-  const tasks=DB.get(DB.KEYS.TASKS).filter(t=>t.assignedTo===id);
+  const tasks=DB.get(DB.KEYS.TASKS).map(normalizeTask).filter(t=>t.assignedTo==id||t.assigned_to==id);
   const active=tasks.filter(t=>t.status!=='done').length;
   const done=tasks.filter(t=>t.status==='done').length;
   const roleLabels={director:'🏛️ Direktor',manager:'📋 Menejer',employee:'👤 Xodim'};
+  // Normalizatsiya
+  const bgColor = u.avatar_color || u.avatarColor || '#1A3A6B';
+  const eff = u.efficiency || 75;
+  const hireDate = u.hire_date || u.hireDate || '';
+  const statusActive = u.status === 'active';
 
   document.getElementById('empDrawerTitle').textContent=u.name;
   document.getElementById('empDrawerBody').innerHTML=`
     <div class="profile-header" style="border-radius:12px;padding:24px;margin-bottom:20px">
-      <div class="profile-avatar" style="background:${u.avatarColor};color:#fff">${u.avatar}</div>
+      <div class="profile-avatar" style="background:${bgColor};color:#fff">${u.avatar||'?'}</div>
       <div>
         <h2>${u.name}</h2>
-        <p>${u.position} · ${u.department}</p>
+        <p>${u.position||'—'} · ${u.department||'—'}</p>
         <div class="profile-meta">
           <span class="profile-meta-item">📧 ${u.email}</span>
-          <span class="profile-meta-item">📱 ${u.phone}</span>
+          <span class="profile-meta-item">📱 ${u.phone||'—'}</span>
         </div>
       </div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:20px">
       <div class="stat-card"><div class="val">${active}</div><div class="lbl">Faol topshiriq</div></div>
       <div class="stat-card"><div class="val">${done}</div><div class="lbl">Bajarildi</div></div>
-      <div class="stat-card"><div class="val" style="color:${u.efficiency>=85?'var(--success)':u.efficiency>=70?'var(--warning)':'var(--danger)'}">${u.efficiency}%</div><div class="lbl">Samaradorlik</div></div>
+      <div class="stat-card"><div class="val" style="color:${eff>=85?'var(--success)':eff>=70?'var(--warning)':'var(--danger)'}">${eff}%</div><div class="lbl">Samaradorlik</div></div>
     </div>
     <div class="info-section">
       <div class="info-section-title">Ma'lumotlar</div>
-      <div class="info-row"><span class="info-key">Rol</span><span class="info-val">${roleLabels[u.role]}</span></div>
-      <div class="info-row"><span class="info-key">Bo'lim</span><span class="info-val">${u.department}</span></div>
-      <div class="info-row"><span class="info-key">Ish boshlagan</span><span class="info-val">${fmtDate(u.hireDate)}</span></div>
-      <div class="info-row"><span class="info-key">Holat</span><span class="info-val"><span class="status status-active">Faol</span></span></div>
+      <div class="info-row"><span class="info-key">Rol</span><span class="info-val">${roleLabels[u.role]||u.role}</span></div>
+      <div class="info-row"><span class="info-key">Bo'lim</span><span class="info-val">${u.department||'—'}</span></div>
+      <div class="info-row"><span class="info-key">Ish boshlagan</span><span class="info-val">${fmtDate(hireDate)}</span></div>
+      <div class="info-row"><span class="info-key">Holat</span><span class="info-val"><span class="status ${statusActive?'status-active':'status-inactive'}">${statusActive?'Faol':'Nofaol'}</span></span></div>
     </div>
     <div class="info-section">
       <div class="info-section-title">Oxirgi topshiriqlar</div>
@@ -2016,11 +2032,13 @@ function editEmployee(id){
   document.getElementById('empId').value=id;
   document.getElementById('empName').value=u.name;
   document.getElementById('empPosition').value=u.position;
-  document.getElementById('empDepartment').value=u.department;
+  document.getElementById('empDepartment').value=u.department || 'Ishlab chiqarish';
   document.getElementById('empRole').value=u.role;
   document.getElementById('empEmail').value=u.email;
   document.getElementById('empPhone').value=u.phone||'';
-  document.getElementById('empPassword').value=u.password;
+  // XAVFSIZLIK: Parol hashini formaga chiqarish MUMKIN EMAS
+  document.getElementById('empPassword').value='';
+  document.getElementById('empPassword').placeholder='O\'zgartirmaslik uchun bo\'sh qoldiring';
   const tgInp = document.getElementById('empTelegramChatId');
   if (tgInp) tgInp.value = u.telegram_chat_id || u.chat_id || u.telegramChatId || '';
   document.getElementById('empModalTitle').textContent='Xodimni tahrirlash';
@@ -2032,28 +2050,46 @@ async function saveEmployee(){
   const id=document.getElementById('empId').value;
   const name=document.getElementById('empName').value.trim();
   const email=document.getElementById('empEmail').value.trim();
-  const password=document.getElementById('empPassword').value;
+  const password=document.getElementById('empPassword').value.trim();
   const telegramChatId = (document.getElementById('empTelegramChatId')?.value || '').trim();
+
   if(!name){ showToast('Ismni kiriting!','error'); return; }
   if(!email){ showToast('Email kiriting!','error'); return; }
-  if(!id&&!password){ showToast('Parol kiriting!','error'); return; }
+  // Yangi xodim uchun parol majburiy; tahrirlashda bo'sh qolsa o'zgarmaydi
+  if(!id && !password){ showToast('Yangi xodim uchun parol kiriting!','error'); return; }
+  if(!id && password.length < 6){ showToast('Parol kamida 6 ta belgi bo\'lishi kerak!','error'); return; }
+  if(id && password && password.length < 6){ showToast('Yangi parol kamida 6 ta belgi bo\'lishi kerak!','error'); return; }
 
   const names=name.trim().split(' ');
   const initials=names.map(n=>n[0]).join('').toUpperCase().slice(0,2);
-  const colors=['#1A3A6B','#7c3aed','#2563eb','#ea580c','#16a34a','#0d9488','#dc2626'];
-  const color=colors[Math.floor(Math.random()*colors.length)];
+
+  // Tahrirlashda mavjud rangni saqlash
+  let color;
+  if(id){
+    const existing = DB.getOne(DB.KEYS.USERS, +id);
+    color = existing?.avatar_color || existing?.avatarColor || '#1A3A6B';
+  } else {
+    const colors=['#1A3A6B','#7c3aed','#2563eb','#ea580c','#16a34a','#0d9488','#dc2626'];
+    color=colors[Math.floor(Math.random()*colors.length)];
+  }
 
   const obj={
-    name, email, password,
+    name, email,
     position:document.getElementById('empPosition').value || 'Xodim',
     department:document.getElementById('empDepartment').value || 'Ishlab chiqarish',
     role:document.getElementById('empRole').value || 'employee',
     phone:document.getElementById('empPhone').value || '',
     telegram_chat_id: telegramChatId,
     chat_id: telegramChatId,
-    avatar:initials, avatarColor:color,
-    efficiency:75, status:'active'
+    avatar:initials,
+    avatar_color:color,
+    avatarColor:color,
+    status:'active'
   };
+
+  // Parol faqat kiritilgan bo'lsa jo'natiladi
+  if(password) obj.password = password;
+  if(!id) obj.efficiency = 75;
 
   showToast('Xodim saqlanmoqda...', 'info');
 
@@ -2063,7 +2099,9 @@ async function saveEmployee(){
       showToast('❌ Xatolik: ' + (res?.error || 'Xodim ma\'lumotlarini yangilab bo\'lmadi.'), 'error');
       return;
     }
-    DB.update(DB.KEYS.USERS,+id,obj);
+    // Server qaytargan yangi ma'lumotni ishlatish
+    const updated = res.employee || obj;
+    DB.update(DB.KEYS.USERS, +id, updated);
     logActivity('update','employee',+id,'Xodim ma\'lumotlari yangilandi: '+name);
     showToast('✅ Xodim ma\'lumotlari yangilandi!','success');
   } else {
@@ -2073,13 +2111,38 @@ async function saveEmployee(){
       return;
     }
     const created = res.employee;
-    if (!DB.getOne(DB.KEYS.USERS, created.id)) {
-      DB.create(DB.KEYS.USERS, created);
+    // Normalizatsiya
+    const normalizedCreated = {
+      ...created,
+      avatarColor: created.avatar_color || created.avatarColor || color,
+      avatar_color: created.avatar_color || created.avatarColor || color,
+      hireDate: created.hire_date || created.hireDate,
+      hire_date: created.hire_date || created.hireDate
+    };
+    if (!DB.getOne(DB.KEYS.USERS, normalizedCreated.id)) {
+      DB.create(DB.KEYS.USERS, normalizedCreated);
     }
-    logActivity('create','employee',created.id,'Yangi xodim qo\'shildi: '+name);
-    showToast('✅ Yangi xodim qo\'shildi! Login: '+email,'success');
+    logActivity('create','employee',normalizedCreated.id,'Yangi xodim qo\'shildi: '+name);
+    showToast('✅ Yangi xodim qo\'shildi! Login: '+email+'  Parol: '+password,'success');
   }
+  // Parol maydonini tozalash
+  const passEl = document.getElementById('empPassword');
+  if(passEl){ passEl.value=''; passEl.placeholder='Kamida 6 ta belgi'; }
   closeModal('employeeModal');
+  // Serverdan yangi ro'yxatni yuklab, ekranni yangilash
+  try {
+    const freshEmps = await API.getEmployees();
+    if(Array.isArray(freshEmps) && freshEmps.length > 0){
+      const normalized = freshEmps.map(se => ({
+        ...se,
+        avatarColor: se.avatar_color || se.avatarColor || '#1A3A6B',
+        avatar_color: se.avatar_color || se.avatarColor || '#1A3A6B',
+        hireDate: se.hire_date || se.hireDate,
+        hire_date: se.hire_date || se.hireDate
+      }));
+      DB.set(DB.KEYS.USERS, normalized);
+    }
+  } catch(e){}
   renderEmployeePage();
 }
 
@@ -2268,16 +2331,25 @@ function renderProfile(){
 
 async function saveMyTelegramChatId() {
   const u = Auth.currentUser;
+  if (!u) return;
   const tgId = document.getElementById('myTelegramChatId').value.trim();
   showToast('Telegram Chat ID saqlanmoqda...', 'info');
 
-  const res = await API.updateEmployee(u.id, { telegram_chat_id: tgId, chat_id: tgId });
-  u.telegram_chat_id = tgId;
-  u.chat_id = tgId;
-  Auth.setUser(u);
-  DB.update(DB.KEYS.USERS, u.id, { telegram_chat_id: tgId, chat_id: tgId });
-
-  showToast('✅ Shaxsiy Telegram Chat ID saqlandi!', 'success');
+  try {
+    const res = await API.updateEmployee(u.id, { telegram_chat_id: tgId, chat_id: tgId });
+    if (!res || res.error) {
+      showToast('❌ Xatolik: ' + (res?.error || 'Server bilan bog\'lanib bo\'lmadi'), 'error');
+      return;
+    }
+    // Faqat muvaffaqiyatda local holatni yangilash
+    u.telegram_chat_id = tgId;
+    u.chat_id = tgId;
+    Auth.setUser(u);
+    DB.update(DB.KEYS.USERS, u.id, { telegram_chat_id: tgId, chat_id: tgId });
+    showToast('✅ Shaxsiy Telegram Chat ID saqlandi!', 'success');
+  } catch(e) {
+    showToast('❌ Server bilan bog\'lanib bo\'lmadi', 'error');
+  }
 }
 
 async function changePassword(){
@@ -2285,9 +2357,8 @@ async function changePassword(){
   const nw  = document.getElementById('newPass').value.trim();
   const conf= document.getElementById('confPass').value.trim();
 
-  const isDirector = Auth.currentUser && Auth.currentUser.role === 'director';
+  if(!cur){ showToast('Joriy parolni kiriting!','error'); return; }
   if(!nw){ showToast('Yangi parolni kiriting!','error'); return; }
-  if(!isDirector && !cur){ showToast('Joriy parolni kiriting!','error'); return; }
   if(nw.length < 6){ showToast('Yangi parol kamida 6 ta belgi bo\'lishi kerak!','error'); return; }
   if(nw !== conf){ showToast('Yangi parollar bir-biriga mos kelmadi!','error'); return; }
 
@@ -2383,13 +2454,29 @@ function renderAdmin(){
   `;
 }
 
-function toggleUserStatus(id){
+async function toggleUserStatus(id){
   const u=DB.getOne(DB.KEYS.USERS,id);
   if(!u)return;
+  // O'zini o'chirish mumkin emas
+  if(u.id === Auth.currentUser?.id){
+    showToast('O\'z hisobingiz holatini o\'zgartira olmaysiz!','error');
+    return;
+  }
   const newStatus=u.status==='active'?'inactive':'active';
-  DB.update(DB.KEYS.USERS,id,{status:newStatus});
-  showToast(`${u.name} holati o'zgartirildi: ${newStatus}`, 'success');
+  showToast('Holat o\'zgartirilmoqda...','info');
+  try {
+    const res = await API.updateEmployee(id, { status: newStatus });
+    if(!res || res.error){
+      showToast('❌ Xatolik: ' + (res?.error || 'Server bilan bog\'lanib bo\'lmadi'), 'error');
+      return;
+    }
+    DB.update(DB.KEYS.USERS, id, { status: newStatus });
+    showToast(`✅ ${u.name} holati o'zgartirildi: ${newStatus==='active'?'Faol':'Nofaol'}`, 'success');
+  } catch(e){
+    showToast('❌ Server bilan bog\'lanib bo\'lmadi', 'error');
+  }
   renderAdmin();
+  renderEmployeePage();
 }
 
 function saveSettings(){

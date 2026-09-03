@@ -3,7 +3,7 @@
     {
       "name": "Aziz Karimov",
       "email": "aziz@angor.uz",
-      "password": "$2a$10$M8UU.5/1rK1b2d.uWlrn4uiSRPbzYlXtwa01P6ABVLRRGrairLoKO",
+      "password": "$2a$10$wvL9oD9r.fLlARUNbe6kfuUm9r7/RQwUJNkJ2sP4paZ7qNmaRB1.G",
       "role": "director",
       "position": "Direktor",
       "department": "Boshqaruv",
@@ -20,7 +20,7 @@
     {
       "name": "Dilnoza Rahimova",
       "email": "dilnoza@angor.uz",
-      "password": "$2a$10$xbdMlPGaJoxIdaPXaFQv0eO2WIqDQ5ym3vCE1RBMfn/YepWY1UClu",
+      "password": "$2a$10$AWsJUPqW8sAJZz9qPuddW.qxb1me7HzTVFKIQKYkBy9xFfiLhB2wm",
       "role": "manager",
       "position": "Moliya menejeri",
       "department": "Moliya",
@@ -37,7 +37,7 @@
     {
       "name": "Bobur Toshev",
       "email": "bobur@angor.uz",
-      "password": "$2a$10$1iK03cHD3n4G/HmXCNaNm.L2jvpbjDzKR54mBKr5urA8hHDSkZpWS",
+      "password": "$2a$10$B1a8FLCqgQ30YwMQaV3a5Oq.Y75oKp2rq7xw9i/ko0MtnmBDvv2sq",
       "role": "employee",
       "position": "Agronom",
       "department": "Ishlab chiqarish",
@@ -54,7 +54,7 @@
     {
       "name": "Malika Yusupova",
       "email": "malika@angor.uz",
-      "password": "$2a$10$CWGhqV.FETFrHuQgxNAGfeEwmWzjnZnlxTPNCWiLLtYNB0dnJXygi",
+      "password": "$2a$10$uiN887ZJUmtKuMnvS8kVlOBv0PKNLB7OEeRrjMtRO/Nx.hBg5zV42",
       "role": "employee",
       "position": "Eksport menejeri",
       "department": "Eksport",
@@ -71,7 +71,7 @@
     {
       "name": "Jasur Ergashev",
       "email": "jasur@angor.uz",
-      "password": "$2a$10$1VTRxqEkdHm/1hGS7APN.encdXx16m7u4yvGu68wmDRQxJIv8LQz6",
+      "password": "$2a$10$jAnx6V2JqpPdqtdkPMFmT.7kt5P9o9VW0VGtxLf/VklpKhCCUwhZ.",
       "role": "employee",
       "position": "Omborchi",
       "department": "Omborxona",
@@ -96,6 +96,8 @@
       "avatar": "SF",
       "avatar_color": "#C8922A",
       "hire_date": "2026-08-21",
+      "efficiency": 95,
+      "status": "active",
       "id": 6,
       "created_at": "2026-08-21T06:38:33.081Z",
       "updated_at": "2026-08-21T06:38:33.081Z"

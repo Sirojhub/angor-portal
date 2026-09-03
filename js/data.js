@@ -112,8 +112,16 @@ const Auth = {
   init(){
     const data = localStorage.getItem('ags_user')||sessionStorage.getItem('ags_user');
     if(!data) return false;
-    this.currentUser = JSON.parse(data);
-    return true;
+    try { this.currentUser = JSON.parse(data); } catch(e){ return false; }
+    return !!this.currentUser;
+  },
+
+  // Foydalanuvchi ma'lumotlarini yangilash va saqlash
+  setUser(userData){
+    this.currentUser = userData;
+    const json = JSON.stringify(userData);
+    if(localStorage.getItem('ags_user'))  localStorage.setItem('ags_user', json);
+    if(sessionStorage.getItem('ags_user')) sessionStorage.setItem('ags_user', json);
   },
 
   logout(){

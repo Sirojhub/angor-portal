@@ -10,7 +10,13 @@ const bcrypt  = require('bcryptjs');
 // GET /api/employees
 router.get('/', auth, (req, res) => {
   const users = db.prepare('SELECT id, name, email, role, position, department, phone, avatar, avatar_color, hire_date, efficiency, status, telegram_chat_id, chat_id, created_at FROM users ORDER BY id ASC').all();
-  res.json(users);
+  // Normalizatsiya: frontend avatarColor va hireDate ham kutishi mumkin
+  const normalized = users.map(u => ({
+    ...u,
+    avatarColor: u.avatar_color,
+    hireDate: u.hire_date
+  }));
+  res.json(normalized);
 });
 
 // POST /api/employees
@@ -19,13 +25,9 @@ router.post('/', auth, (req, res) => {
     return res.status(403).json({ error: 'Ruxsat berilmadi' });
   }
 
-  const { name, email, password, role, position, department, phone, avatar, avatarColor, avatar_color, hireDate, hire_date, telegram_chat_id, chatId, chat_id } = req.body;
+  const { name, email, password, role, position, department, phone, avatar, avatarColor, avatar_color, hireDate, hire_date } = req.body;
   if (!name || !email) {
     return res.status(400).json({ error: 'Ism va email kiritilishi shart' });
-  }
-
-  if (!password || password.length < 6) {
-    return res.status(400).json({ error: 'Parol kamida 6 belgidan iborat bo\'lishi shart' });
   }
 
   const existing = db.prepare('SELECT id FROM users WHERE email = ?').get(email);
@@ -33,55 +35,51 @@ router.post('/', auth, (req, res) => {
     return res.status(400).json({ error: 'Bu email bilan foydalanuvchi allaqachon mavjud' });
   }
 
-  const hash = bcrypt.hashSync(password, 10);
+  const hash = bcrypt.hashSync(password || '123456', 10);
   const userAvatar = avatar || name.split(' ').map(x=>x[0]).join('').toUpperCase().slice(0,2);
   const userColor = avatarColor || avatar_color || '#C8922A';
   const userHireDate = hireDate || hire_date || new Date().toISOString().slice(0,10);
-  const userTelegramId = (telegram_chat_id || chatId || chat_id || '').trim();
 
   const result = db.prepare(`
-    INSERT INTO users (name, email, password, role, position, department, phone, avatar, avatar_color, hire_date, efficiency, status, telegram_chat_id, chat_id)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 75, 'active', ?, ?)
-  `).run(name, email, hash, role || 'employee', position || 'Xodim', department || 'Boshqaruv', phone || '', userAvatar, userColor, userHireDate, userTelegramId, userTelegramId);
+    INSERT INTO users (name, email, password, role, position, department, phone, avatar, avatar_color, hire_date, efficiency, status)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 75, 'active')
+  `).run(name, email, hash, role || 'employee', position || 'Xodim', department || 'Boshqaruv', phone || '', userAvatar, userColor, userHireDate);
 
   db.prepare(`INSERT INTO activity_logs (user_id, user_name, action, model, model_id, description) VALUES (?,?,?,?,?,?)`).run(
     req.user.id, req.user.name, 'create', 'user', result.lastInsertRowid, `Yangi xodim «${name}» ni qo'shdi`
   );
 
   const newUser = db.prepare('SELECT id, name, email, role, position, department, phone, avatar, avatar_color, hire_date, efficiency, status, telegram_chat_id, chat_id FROM users WHERE id = ?').get(result.lastInsertRowid);
+  // Normalizatsiya: frontend avatarColor va hireDate ham kutishi mumkin
+  if (newUser) {
+    newUser.avatarColor = newUser.avatar_color;
+    newUser.hireDate    = newUser.hire_date;
+  }
   res.json({ success: true, employee: newUser });
 });
 
 // PUT /api/employees/:id
 router.put('/:id', auth, (req, res) => {
+  if (req.user.role !== 'director' && req.user.role !== 'manager' && req.user.id !== parseInt(req.params.id)) {
+    return res.status(403).json({ error: 'Ruxsat berilmadi' });
+  }
+
   const { id } = req.params;
   const user = db.prepare('SELECT * FROM users WHERE id = ?').get(id);
   if (!user) return res.status(404).json({ error: 'Xodim topilmadi' });
 
-  const isDirectorOrManager = req.user.role === 'director' || req.user.role === 'manager';
-  const isSelf = req.user.id === parseInt(id);
-
-  if (!isDirectorOrManager && !isSelf) {
-    return res.status(403).json({ error: 'Ruxsat etilmagan: ushbu profilni tahrirlash huquqingiz yo\'q' });
-  }
-
-  // Task 1-BAND: Scoped field selection
-  // Director/Manager: can update all profile & RBAC fields
-  // Employee self-edit: ONLY name, phone, avatar, avatar_color, telegram_chat_id, password (role, position, department, hire_date, efficiency, status are ignored)
-  const fields = isDirectorOrManager 
-    ? ['name','role','position','department','phone','avatar','avatar_color','hire_date','efficiency','status']
-    : ['name','phone','avatar','avatar_color'];
-
+  // telegram_chat_id va avatar_color ham yangilanishi mumkin
+  const fields = ['name','role','position','department','phone','avatar','avatar_color','hire_date','efficiency','status','telegram_chat_id','chat_id'];
   const updates = []; const values = [];
 
   for (const f of fields) {
     if (req.body[f] !== undefined) { updates.push(`${f} = ?`); values.push(req.body[f]); }
   }
 
-  if (req.body.telegram_chat_id !== undefined || req.body.chatId !== undefined || req.body.chat_id !== undefined) {
-    const tgId = (req.body.telegram_chat_id || req.body.chatId || req.body.chat_id || '').toString().trim();
-    updates.push('telegram_chat_id = ?'); values.push(tgId);
-    updates.push('chat_id = ?'); values.push(tgId);
+  // avatarColor (frontend camelCase) -> avatar_color
+  if (req.body.avatarColor !== undefined && req.body.avatar_color === undefined) {
+    updates.push('avatar_color = ?');
+    values.push(req.body.avatarColor);
   }
 
   if (req.body.password) {
@@ -90,7 +88,8 @@ router.put('/:id', auth, (req, res) => {
   }
 
   if (!updates.length) return res.status(400).json({ error: 'O\'zgartirish kiritilmadi' });
-  values.push(parseInt(id));
+  // updated_at ni DB engine o'zi boshqaradi (datetime('now') JSON engine da ishamaydi)
+  values.push(id);
 
   db.prepare(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`).run(...values);
 
@@ -99,6 +98,11 @@ router.put('/:id', auth, (req, res) => {
   );
 
   const updated = db.prepare('SELECT id, name, email, role, position, department, phone, avatar, avatar_color, hire_date, efficiency, status, telegram_chat_id, chat_id FROM users WHERE id = ?').get(id);
+  // Normalizatsiya: frontend ham avatar_color, ham avatarColor kutishi mumkin
+  if (updated) {
+    updated.avatarColor = updated.avatar_color;
+    updated.hireDate    = updated.hire_date;
+  }
   res.json({ success: true, employee: updated });
 });
 

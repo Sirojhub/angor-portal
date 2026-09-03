@@ -66,10 +66,10 @@ router.post('/login', (req, res) => {
     return res.status(401).json({ error: 'Login yoki parol noto\'g\'ri' });
   }
 
-  // Task 4: Strict password verification against DB hash (no defaultPasswords, no auto-provisioning)
+  // XAVFSIZLIK: Parolni faqat bcrypt orqali tekshirish (plain-text taqqoslash qat'iyan taqiqlangan)
   let validPass = false;
   if (user && user.password) {
-    validPass = bcrypt.compareSync(password, user.password) || (password === user.password);
+    validPass = bcrypt.compareSync(password || '', user.password);
   }
 
   if (!validPass) {
@@ -269,8 +269,8 @@ router.put('/change-password', require('../middleware/auth'), async (req, res) =
 
   if (!user) return res.status(404).json({ error: 'Foydalanuvchi topilmadi' });
 
-  // Task 5: Master password backdoor completely removed. Strictly verify current password.
-  const valid = currentPassword && user.password && (bcrypt.compareSync(currentPassword, user.password) || currentPassword === user.password);
+  // XAVFSIZLIK: Parolni faqat bcrypt orqali tekshirish
+  const valid = currentPassword && user.password && bcrypt.compareSync(currentPassword, user.password);
 
   if (!valid) {
     return res.status(400).json({ error: 'Joriy parol noto\'g\'ri!' });
