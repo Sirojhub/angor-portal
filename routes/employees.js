@@ -60,7 +60,10 @@ router.post('/', auth, (req, res) => {
 
 // PUT /api/employees/:id
 router.put('/:id', auth, (req, res) => {
-  if (req.user.role !== 'director' && req.user.role !== 'manager' && req.user.id !== parseInt(req.params.id)) {
+  const isDirectorOrManager = req.user.role === 'director' || req.user.role === 'manager';
+  const isSelf = req.user.id === parseInt(req.params.id);
+
+  if (!isDirectorOrManager && !isSelf) {
     return res.status(403).json({ error: 'Ruxsat berilmadi' });
   }
 
@@ -68,8 +71,13 @@ router.put('/:id', auth, (req, res) => {
   const user = db.prepare('SELECT * FROM users WHERE id = ?').get(id);
   if (!user) return res.status(404).json({ error: 'Xodim topilmadi' });
 
-  // telegram_chat_id va avatar_color ham yangilanishi mumkin
-  const fields = ['name','role','position','department','phone','avatar','avatar_color','hire_date','efficiency','status','telegram_chat_id','chat_id'];
+  // XAVFSIZLIK: Direktor/Menejer — barcha maydonni o'zgartira oladi.
+  // Xodim o'zini tahrirlasa — FAQAT shaxsiy ma'lumotlarni o'zgartira oladi,
+  // role/position/department/hire_date/efficiency/status HECH QACHON o'zi tomonidan o'zgartirilmasin.
+  const fields = isDirectorOrManager
+    ? ['name','role','position','department','phone','avatar','avatar_color','hire_date','efficiency','status','telegram_chat_id','chat_id']
+    : ['name','phone','avatar','avatar_color','telegram_chat_id','chat_id'];
+
   const updates = []; const values = [];
 
   for (const f of fields) {
@@ -88,7 +96,6 @@ router.put('/:id', auth, (req, res) => {
   }
 
   if (!updates.length) return res.status(400).json({ error: 'O\'zgartirish kiritilmadi' });
-  // updated_at ni DB engine o'zi boshqaradi (datetime('now') JSON engine da ishamaydi)
   values.push(id);
 
   db.prepare(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`).run(...values);
@@ -98,7 +105,6 @@ router.put('/:id', auth, (req, res) => {
   );
 
   const updated = db.prepare('SELECT id, name, email, role, position, department, phone, avatar, avatar_color, hire_date, efficiency, status, telegram_chat_id, chat_id FROM users WHERE id = ?').get(id);
-  // Normalizatsiya: frontend ham avatar_color, ham avatarColor kutishi mumkin
   if (updated) {
     updated.avatarColor = updated.avatar_color;
     updated.hireDate    = updated.hire_date;
