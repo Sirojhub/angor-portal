@@ -1355,26 +1355,8 @@ async function saveDocument(){
     showToast('✅ Hujjat muvaffaqiyatli saqlandi va yuklandi!','success');
     DB.create(DB.KEYS.DOCS, res.document);
   } else {
-    const ftMap={shartnoma:'PDF',moliyaviy:'XLSX',dala_jurnali:'XLSX',buyruq:'DOCX',sertifikat:'PDF',laboratoriya:'PDF'};
-    const doc=DB.create(DB.KEYS.DOCS,{
-      title,
-      category,
-      version: 'v1',
-      fileType: fileType||ftMap[category]||'PDF',
-      fileSize: file ? (file.size/1024).toFixed(0)+' KB' : '1.2 MB',
-      file_path: localFilePath,
-      filePath: localFilePath,
-      uploadedBy: Auth.currentUser.id,
-      uploadedName: Auth.currentUser.name,
-      uploadDate: new Date().toISOString().split('T')[0],
-      status: 'active',
-      description,
-      target_user_id: targetId ? +targetId : null,
-      target_user_name: targetUser ? targetUser.name : null,
-      reply_to_id: window._docReplyToId || null
-    });
-    logActivity('upload','document',doc.id,'Yangi hujjat yukladi: '+title);
-    showToast('Hujjat saqlandi!','success');
+    showToast('❌ Xatolik: ' + (res?.error || 'Hujjatni saqlab bo\'lmadi. Qayta urinib ko\'ring.'), 'error');
+    return;
   }
 
   window._docReplyToId = null;
@@ -1480,63 +1462,62 @@ function previewDoc(id){
 }
 
 
-function approveDoc(id){
+async function approveDoc(id){
   const d=DB.getOne(DB.KEYS.DOCS,id);
   if(!d)return;
+  showToast('Tasdiqlanmoqda...', 'info');
+  const res = await API.request(`documents/${id}`, 'PUT', { status: 'active' });
+  if (!res || res.success === false || res.error) {
+    showToast('❌ Xatolik: ' + (res?.error || 'Hujjatni tasdiqlab bo\'lmadi'), 'error');
+    return;
+  }
   DB.update(DB.KEYS.DOCS,id,{status:'active'});
   logActivity('approve','document',id,`«${d.title}» hujjatini tasdiqladi va bazaga saqladi`);
-  showToast('Hujjat Direktor tomonidan tasdiqlandi va rasmiy bazaga saqlandi!','success');
+  showToast('✅ Hujjat tasdiqlandi va bazaga saqlandi!','success');
   closeModal('docViewModal');
   renderDocs();
 }
 
-function downloadDoc(id){
-  const d=DB.getOne(DB.KEYS.DOCS,id);
-  if(!d)return;
+async function downloadDoc(id) {
+  const doc = DB.getOne(DB.KEYS.DOCS, id) || (window.appDocs && appDocs.find(d => d.id == id));
+  if (!doc) { showToast('Hujjat topilmadi', 'error'); return; }
 
-  const filePath = d.file_path || d.filePath;
-  showToast(`«${d.title}» yuklab olinmoqda...`,'info');
-
-  if (filePath) {
-    const a = document.createElement('a');
-    a.href = filePath;
-    a.download = `${d.title}.${(d.fileType||'pdf').toLowerCase()}`;
-    a.target = '_blank';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    return;
+  showToast(`«${doc.title}» yuklab olinmoqda...`, 'info');
+  try {
+    const token = localStorage.getItem('ags_token') || sessionStorage.getItem('ags_token');
+    const res = await fetch(`/api/documents/${id}/download`, {
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      showToast('❌ ' + (err.error || 'Yuklab olishda xatolik yuz berdi'), 'error');
+      return;
+    }
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = doc.title || 'hujjat';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    showToast('✅ Hujjat yuklab olindi', 'success');
+  } catch (e) {
+    showToast('❌ Server bilan bog\'lanib bo\'lmadi', 'error');
   }
-
-  const textContent = `================================================
-ANGOR AGRO STAR MCHJ — RASMIY HUJJAT
-================================================
-HUJJAT NOMI: ${d.title}
-KATEGORIYA: ${d.category}
-VERSIYA: ${d.version || 'v1.0'}
-YUKLAGAN: ${d.uploadedName}
-SANA: ${d.uploadDate}
-HOLAT: ${d.status==='active' ? 'TASDIQLANGAN VA AMALDA' : 'KUTILMOQDA'}
-TAVSIF: ${d.description||'Izoh berilmagan'}
-================================================
-Ushbu hujjat Angor Agro Star MCHJ korporativ boshqaruv tizimidan rasman yuklab olindi.
-  `;
-
-  const blob = new Blob([textContent], { type: 'text/plain;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `${d.title.replace(/[^a-zA-Z0-9_\- ]/g, '_')}.${(d.fileType||'txt').toLowerCase()}`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
 }
 
-function deleteDoc(id){
+async function deleteDoc(id){
   if(!confirm('Hujjatni o\'chirasizmi?'))return;
+  showToast('O\'chirilmoqda...', 'info');
+  const res = await API.deleteDoc(id);
+  if (!res || res.success === false || res.error) {
+    showToast('❌ Xatolik: ' + (res?.error || 'Hujjatni o\'chirib bo\'lmadi'), 'error');
+    return;
+  }
   DB.delete(DB.KEYS.DOCS,id);
-  showToast('Hujjat o\'chirildi','success');
+  showToast('✅ Hujjat o\'chirildi','success');
   renderDocs(); buildDocTabs();
 }
 
@@ -1595,7 +1576,7 @@ function openNewClientModal(){
   openModal('clientModal');
 }
 
-function saveClient(){
+async function saveClient(){
   const name=document.getElementById('clientName').value.trim();
   if(!name){ showToast('Firma nomini kiriting!','error'); return; }
   const obj={
@@ -1608,14 +1589,26 @@ function saveClient(){
     notes:document.getElementById('clientNotes').value,
     aiRisk:'low', riskText:'Yangi mijoz, tahlil qilinmagan', status:'active'
   };
+  showToast('Saqlanmoqda...', 'info');
   if(editingClientId){
+    const res = await API.updateClient(editingClientId, obj);
+    if (!res || res.success === false || res.error) {
+      showToast('❌ Xatolik: ' + (res?.error || 'Mijozni yangilab bo\'lmadi'), 'error');
+      return;
+    }
     DB.update(DB.KEYS.CLIENTS,editingClientId,obj);
-    showToast('Mijoz yangilandi!','success');
+    showToast('✅ Mijoz yangilandi!','success');
     logActivity('update','client',editingClientId,'Mijoz ma\'lumotlari yangilandi: '+name);
   } else {
-    const c=DB.create(DB.KEYS.CLIENTS,obj);
+    const res = await API.createClient(obj);
+    if (!res || res.success === false || res.error || !res.client) {
+      showToast('❌ Xatolik: ' + (res?.error || 'Mijozni saqlab bo\'lmadi'), 'error');
+      return;
+    }
+    const c = res.client;
+    if (!DB.getOne(DB.KEYS.CLIENTS, c.id)) DB.create(DB.KEYS.CLIENTS, c);
     logActivity('create','client',c.id,'Yangi mijoz qo\'shildi: '+name);
-    showToast('Yangi mijoz qo\'shildi!','success');
+    showToast('✅ Yangi mijoz qo\'shildi!','success');
   }
   closeModal('clientModal');
   renderClients();
@@ -1795,7 +1788,7 @@ function openWarehouseTxnModal(type,itemId){
   openModal('whModal');
 }
 
-function saveWarehouseTxn(type){
+async function saveWarehouseTxn(type){
   const itemId=+document.getElementById('whItem').value;
   const qty=+document.getElementById('whQty').value;
   if(!qty||qty<=0){ showToast('Miqdorni kiriting!','error'); return; }
@@ -1803,15 +1796,22 @@ function saveWarehouseTxn(type){
   if(!item)return;
   const newStock=type==='kirim'?item.currentStock+qty:item.currentStock-qty;
   if(newStock<0){ showToast('Zaxira yetarli emas!','error'); return; }
-  DB.update(DB.KEYS.WAREHOUSE,itemId,{currentStock:newStock});
-  DB.create(DB.KEYS.WAREHOUSE_TXN,{
-    itemId, itemName:item.name, type, quantity:qty,
+
+  showToast('Saqlanmoqda...', 'info');
+  const res = await API.addWarehouseTxn({
+    item_id: itemId, itemName:item.name, type, quantity:qty,
     note:document.getElementById('whNote').value,
     date:new Date().toISOString().split('T')[0],
     createdBy:Auth.currentUser.id
   });
+  if (!res || res.success === false || res.error) {
+    showToast('❌ Xatolik: ' + (res?.error || 'Saqlab bo\'lmadi'), 'error');
+    return;
+  }
+  DB.update(DB.KEYS.WAREHOUSE,itemId,{currentStock:newStock});
+  DB.create(DB.KEYS.WAREHOUSE_TXN,{ itemId, itemName:item.name, type, quantity:qty, note:document.getElementById('whNote').value, date:new Date().toISOString().split('T')[0], createdBy:Auth.currentUser.id });
   logActivity(type,'warehouse',itemId,`${item.name}: ${type==='kirim'?'+':'-'}${qty} ${item.unit}`);
-  showToast(`${type==='kirim'?'Kirim':'Chiqim'} muvaffaqiyatli saqlandi!`,'success');
+  showToast(`✅ ${type==='kirim'?'Kirim':'Chiqim'} muvaffaqiyatli saqlandi!`,'success');
   closeModal('whModal');
   renderWarehouse();
 }
@@ -2750,57 +2750,32 @@ function previewDoc(id) {
   openModal('docViewModal');
 }
 
-function downloadDoc(id) {
-  var doc = DB.getOne(DB.KEYS.DOCS, id);
-  if (!doc && window.appDocs) doc = appDocs.find(d => d.id == id);
-  if (!doc) {
-    showToast('Hujjat topilmadi', 'error');
-    return;
-  }
+// downloadDoc — real server fetch (Bearer token required)
+// (single authoritative definition — the earlier duplicate has been replaced above)
 
-  const filePath = doc.file_path || doc.filePath;
-  if (filePath) {
-    const link = document.createElement('a');
-    link.href = filePath;
-    link.target = '_blank';
-    link.download = doc.title || 'hujjat';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    showToast('Hujjat fayli ochilmoqda / yuklab olinmoqda...', 'success');
-  } else if (doc.fileData) {
-    const link = document.createElement('a');
-    link.href = doc.fileData;
-    link.download = (doc.title || 'hujjat') + '.' + (doc.fileType || 'pdf').toLowerCase();
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    showToast('Hujjat yuklab olindi', 'success');
-  } else {
-    showToast('Hujjat uchun biriktirilgan fayl mavjud emas', 'warning');
-  }
-}
-
-function approveCurrentDoc(status) {
+async function approveCurrentDoc(status) {
   if (!activePreviewDocId) return;
   var doc = DB.getOne(DB.KEYS.DOCS, activePreviewDocId);
   if (!doc && window.appDocs) doc = appDocs.find(d => d.id == activePreviewDocId);
   if (!doc) return;
 
   var newStatus = status === 'approved' ? 'active' : 'rejected';
-  DB.update(DB.KEYS.DOCS, activePreviewDocId, { status: newStatus });
-  if (window.API && API.request) {
-    API.request(`/documents/${activePreviewDocId}`, 'PUT', { status: newStatus }).catch(()=>{});
+  showToast('Saqlanmoqda...', 'info');
+  const res = await API.request(`documents/${activePreviewDocId}`, 'PUT', { status: newStatus });
+  if (!res || res.success === false || res.error) {
+    showToast('❌ Xatolik: ' + (res?.error || 'Saqlab bo\'lmadi'), 'error');
+    return;
   }
-
+  DB.update(DB.KEYS.DOCS, activePreviewDocId, { status: newStatus });
   logActivity('approve', 'document', activePreviewDocId, `«${doc.title}» hujjatini tasdiqladi va bazaga saqladi`);
-  showToast(status === 'approved' ? 'Hujjat muvaffaqiyatli tasdiqlandi va bazaga saqlandi!' : 'Hujjat rad etildi!', status === 'approved' ? 'success' : 'warning');
+  showToast(status === 'approved' ? '✅ Hujjat muvaffaqiyatli tasdiqlandi va bazaga saqlandi!' : '⚠️ Hujjat rad etildi!', status === 'approved' ? 'success' : 'warning');
   closeModal('docViewModal');
   renderDocs();
 }
 
-function downloadDocFile() {
-  showToast('Hujjat fayli yuklab olindi', 'success');
+async function downloadDocFile() {
+  if (!activePreviewDocId) { showToast('Hujjat tanlanmagan', 'error'); return; }
+  await downloadDoc(activePreviewDocId);
 }
 
 function printDocPreview() {

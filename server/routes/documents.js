@@ -332,6 +332,49 @@ router.post('/', auth, (req, res, next) => {
   res.json({ success: true, document: doc });
 });
 
+// PUT /api/documents/:id (Update document status — Director/Manager only)
+router.put('/:id', auth, (req, res) => {
+  const doc = db.prepare('SELECT * FROM documents WHERE id = ?').get(req.params.id);
+  if (!doc) return res.status(404).json({ error: 'Hujjat topilmadi' });
+
+  const isDirector = req.user.role === 'director';
+  const isManager  = req.user.role === 'manager';
+  if (!isDirector && !isManager) {
+    return res.status(403).json({ error: 'Faqat Direktor yoki Menejer hujjat holatini o\'zgartira oladi' });
+  }
+
+  const allowedFields = ['status', 'title', 'description', 'category', 'version', 'expiry_date'];
+  const updates = []; const values = [];
+  for (const f of allowedFields) {
+    if (req.body[f] !== undefined) { updates.push(`${f} = ?`); values.push(req.body[f]); }
+  }
+  if (!updates.length) return res.status(400).json({ error: 'O\'zgartirish yo\'q' });
+  values.push(req.params.id);
+
+  db.prepare(`UPDATE documents SET ${updates.join(', ')} WHERE id = ?`).run(...values);
+
+  db.prepare(`INSERT INTO activity_logs (user_id, user_name, action, model, model_id, description) VALUES (?,?,?,?,?,?)`).run(
+    req.user.id, req.user.name, 'update', 'document', req.params.id,
+    `«${doc.title}» hujjat holati o'zgartirildi: ${req.body.status || 'yangilandi'}`
+  );
+
+  if (req.body.status === 'active' && doc.uploaded_by && doc.uploaded_by !== req.user.id) {
+    db.prepare(`INSERT INTO notifications (user_id, title, message, type) VALUES (?,?,?,?)`).run(
+      doc.uploaded_by, 'Hujjat tasdiqlandi',
+      `${req.user.name} «${doc.title}» hujjatingizni tasdiqladi`, 'success'
+    );
+  }
+  if (req.body.status === 'rejected' && doc.uploaded_by && doc.uploaded_by !== req.user.id) {
+    db.prepare(`INSERT INTO notifications (user_id, title, message, type) VALUES (?,?,?,?)`).run(
+      doc.uploaded_by, 'Hujjat rad etildi',
+      `${req.user.name} «${doc.title}» hujjatingizni rad etdi`, 'warning'
+    );
+  }
+
+  const updated = db.prepare('SELECT * FROM documents WHERE id = ?').get(req.params.id);
+  res.json({ success: true, document: updated });
+});
+
 // DELETE /api/documents/:id (Task 2.3: Only uploader or Director can delete)
 router.delete('/:id', auth, (req, res) => {
   const doc = db.prepare('SELECT * FROM documents WHERE id = ?').get(req.params.id);
