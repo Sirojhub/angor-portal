@@ -275,11 +275,11 @@
       <!-- Form -->
       <form onsubmit="handleLogin(event)">
         <div class="form-group">
-          <label class="form-label" for="loginEmail">Email</label>
+          <label class="form-label" for="loginEmail">Login</label>
           <div class="input-wrap">
-            <span class="input-icon">✉️</span>
-            <input type="email" class="form-control" id="loginEmail"
-              placeholder="email@angoragrostar.uz" autocomplete="username">
+            <span class="input-icon">👤</span>
+            <input type="text" class="form-control" id="loginEmail"
+              placeholder="login nomingiz" autocomplete="username">
           </div>
         </div>
         <div class="form-group">
@@ -351,16 +351,7 @@
       errEl.classList.remove('show');
 
       if (!email) {
-        document.getElementById('errorText').textContent = 'Email manzilingizni kiriting!';
-        errEl.style.display = 'flex';
-        errEl.classList.add('show');
-        return;
-      }
-
-      // Email format validation (Task 9)
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(email)) {
-        document.getElementById('errorText').textContent = 'Email formati noto\'g\'ri! (masalan: user@angor.uz)';
+        document.getElementById('errorText').textContent = 'Login nomingizni kiriting!';
         errEl.style.display = 'flex';
         errEl.classList.add('show');
         return;
@@ -451,7 +442,7 @@
       if(!email){
         alertEl.style.display = 'block';
         alertEl.style.background = '#fee2e2'; alertEl.style.color = '#dc2626';
-        alertEl.textContent = 'Email manzilingizni kiriting!';
+        alertEl.textContent = 'Login nomingizni kiriting!';
         return;
       }
 
@@ -467,11 +458,11 @@
           if (res && res.success) {
             alertEl.style.display = 'block';
             alertEl.style.background = '#dcfce7'; alertEl.style.color = '#15803d';
-            alertEl.innerHTML = `✅ Tasdiqlash kodi yuborildi!<br>Telegram / Email'ingizga yuborilgan 6 xonali kodni va yangi parolingizni kiriting.<br><div style="margin-top:10px;display:flex;flex-direction:column;gap:8px;"><input type="text" id="verifyOtpCode" class="form-control" placeholder="6 xonali kod (masalan: 123456)" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px"><input type="password" id="newOtpPassword" class="form-control" placeholder="Yangi parol (kamida 6 ta belgi)" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px"><button type="button" class="btn-login" style="width:100%;padding:8px 12px;margin-top:4px" onclick="confirmResetCode('${email}')">Tasdiqlash va Parolni Saqlash</button></div>`;
+            alertEl.innerHTML = `✅ Tasdiqlash kodi yuborildi!<br>Telegramingizga yuborilgan 6 xonali kodni va yangi parolingizni kiriting.<br><div style="margin-top:10px;display:flex;flex-direction:column;gap:8px;"><input type="text" id="verifyOtpCode" class="form-control" placeholder="6 xonali kod (masalan: 123456)" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px"><input type="password" id="newOtpPassword" class="form-control" placeholder="Yangi parol (kamida 6 ta belgi)" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px"><button type="button" class="btn-login" style="width:100%;padding:8px 12px;margin-top:4px" onclick="confirmResetCode('${email}')">Tasdiqlash va Parolni Saqlash</button></div>`;
           } else {
             alertEl.style.display = 'block';
             alertEl.style.background = '#fee2e2'; alertEl.style.color = '#dc2626';
-            alertEl.textContent = res ? (res.error || 'Topilmadi') : 'Ushbu email topilmadi!';
+            alertEl.textContent = res ? (res.error || 'Topilmadi') : 'Ushbu login topilmadi!';
           }
         } catch (err) {
           btn.disabled = false; btn.textContent = '📲 Tiklash';
@@ -531,11 +522,11 @@
         <span style="font-size:20px;cursor:pointer;color:var(--text-muted)" onclick="closeResetModal()">✕</span>
       </div>
       <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px;line-height:1.5">
-        Tizimda ro'yxatdan o'tgan E-mail manzilingizni kiriting. Administratorga va Telegram Bot'ga tiklash kodi yuboriladi.
+        Tizimda ro'yxatdan o'tgan Login nomingizni kiriting. Bir martalik kod sizning shaxsiy Telegram'ingizga yuboriladi.
       </p>
       <div class="form-group" style="margin-bottom:16px">
-        <label class="form-label" style="font-size:11px;font-weight:700;color:var(--text-muted);display:block;margin-bottom:6px">EMAIL MANZILINGIZ</label>
-        <input type="email" id="resetEmailInput" class="form-control" placeholder="email@gmail.com" style="width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:8px;font-size:13px">
+        <label class="form-label" style="font-size:11px;font-weight:700;color:var(--text-muted);display:block;margin-bottom:6px">LOGIN NOMINGIZ</label>
+        <input type="text" id="resetEmailInput" class="form-control" placeholder="Login nomingiz" style="width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:8px;font-size:13px">
       </div>
       <div id="resetAlert" style="display:none;padding:12px;border-radius:8px;font-size:13px;margin-bottom:16px"></div>
       <div style="display:flex;gap:10px;justify-content:flex-end">

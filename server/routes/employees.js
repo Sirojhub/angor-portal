@@ -74,8 +74,24 @@ router.put('/:id', auth, (req, res) => {
   // XAVFSIZLIK: Direktor/Menejer — barcha maydonni o'zgartira oladi.
   // Xodim o'zini tahrirlasa — FAQAT shaxsiy ma'lumotlarni o'zgartira oladi,
   // role/position/department/hire_date/efficiency/status HECH QACHON o'zi tomonidan o'zgartirilmasin.
+  // Login (email) maydonini faqat Direktor/Menejer o'zgartira oladi — format tekshiruvisiz
+  if (isDirectorOrManager && req.body.email !== undefined) {
+    const newLogin = req.body.email.trim().toLowerCase();
+
+    if (!newLogin) {
+      return res.status(400).json({ error: 'Login bo\'sh bo\'lishi mumkin emas' });
+    }
+
+    const existing = db.prepare('SELECT id FROM users WHERE email = ? AND id != ?').get(newLogin, req.params.id);
+    if (existing) {
+      return res.status(400).json({ error: 'Bu login boshqa xodimda allaqachon band' });
+    }
+
+    req.body.email = newLogin;
+  }
+
   const fields = isDirectorOrManager
-    ? ['name','role','position','department','phone','avatar','avatar_color','hire_date','efficiency','status','telegram_chat_id','chat_id']
+    ? ['name','role','position','department','phone','avatar','avatar_color','hire_date','efficiency','status','telegram_chat_id','chat_id','email']
     : ['name','phone','avatar','avatar_color','telegram_chat_id','chat_id'];
 
   const updates = []; const values = [];
